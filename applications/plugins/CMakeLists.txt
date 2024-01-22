@@ -23,7 +23,6 @@ sofa_add_subdirectory(plugin image image) # Depends on CImgPlugin, DiffusionSolv
 sofa_add_subdirectory(plugin SofaNewmat SofaNewmat)
 
 sofa_add_subdirectory(directory SofaPython3 SofaPython3 EXTERNAL)
-sofa_add_subdirectory(plugin CGALPlugin CGALPlugin EXTERNAL)     # Depends on image
 sofa_add_subdirectory(plugin Registration Registration EXTERNAL) # Depends on image, SofaPython, SofaGui and SofaDistanceGrid
 sofa_add_subdirectory(plugin BulletCollisionDetection BulletCollisionDetection) # Depends on Compliant and LMConstraint
 sofa_add_subdirectory(plugin ExternalBehaviorModel ExternalBehaviorModel OFF WHEN_TO_SHOW "SOFA_ENABLE_LEGACY_HEADERS" VALUE_IF_HIDDEN OFF)
@@ -44,6 +43,7 @@ sofa_add_subdirectory(plugin SofaCarving SofaCarving)
 sofa_add_subdirectory(plugin LeapMotion LeapMotion)
 sofa_add_subdirectory(plugin Geomagic Geomagic)
 sofa_add_subdirectory(plugin SofaAssimp SofaAssimp) # ColladaSceneLoader Depends on Flexible and image
+sofa_add_subdirectory(plugin CGALPlugin CGALPlugin EXTERNAL)     # Depends on image
 sofa_add_subdirectory(plugin SofaMatrix SofaMatrix ON) # Depends on image, CImgPlugin
 sofa_add_subdirectory(plugin BeamAdapter BeamAdapter EXTERNAL)
 sofa_add_subdirectory(plugin STLIB STLIB EXTERNAL)
