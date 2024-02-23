@@ -43,7 +43,11 @@ sofa_find_package(TinyXML2 REQUIRED)
 
 
 message("!!!!!!!!!!! Install tinyXML !!!!!!!!!!!")
-sofa_install_libraries(PATHS ${TinyXML2_LIBRARY})
+if(TinyXML2_LIBRARY)
+    sofa_install_libraries(PATHS ${TinyXML2_LIBRARY})
+else()
+    sofa_install_libraries(PATHS ${TinyXML2_LIBRARIES})
+endif()
 message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
