@@ -14,5 +14,5 @@ sofa_add_subdirectory(application runSofa runSofa ON)
 sofa_add_subdirectory(application sofaOPENCL sofaOPENCL OFF)
 
 sofa_add_subdirectory(directory Regression Regression EXTERNAL GIT_REF v23.12)
-sofa_add_subdirectory(directory SofaGLFW SofaGLFW EXTERNAL GIT_REF v23.12)
+sofa_add_subdirectory(directory SofaGLFW SofaGLFW EXTERNAL GIT_REF fix_runsofaglfw_black_creen)
 sofa_add_subdirectory(application sofaProjectExample sofaProjectExample)
