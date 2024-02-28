@@ -61,7 +61,7 @@ if(NOT metis_FOUND AND SOFA_ALLOW_FETCH_DEPENDENCIES)
     include(FetchContent)
     FetchContent_Declare(metis
             GIT_REPOSITORY https://github.com/sofa-framework/METIS
-            GIT_TAG v5.1.0-ModernInstall
+            GIT_TAG test_metis_for_windows_binary
     )
     FetchContent_MakeAvailable(metis)
 elseif (NOT metis_FOUND)
