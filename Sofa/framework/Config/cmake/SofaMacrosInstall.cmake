@@ -859,6 +859,7 @@ function(sofa_install_libraries)
             get_target_property(is_framework ${target} FRAMEWORK)
             if(APPLE AND is_framework)
                 get_filename_component(target_location ${target_location} DIRECTORY) # parent dir
+                message("Target ${target} is a framework and directory ${target_location} will be installed")
                 install(DIRECTORY ${target_location} DESTINATION "lib" COMPONENT applications)
             else()
                 list(APPEND lib_paths "${target_location}")
@@ -887,10 +888,15 @@ function(sofa_install_libraries)
             if(NOT EXISTS ${lib_path})
                 continue()
             endif()
+            message("Lib  ${lib_path} is being processed...")
 
             get_filename_component(LIBREAL ${lib_path} REALPATH)
             get_filename_component(LIBREAL_NAME ${LIBREAL} NAME_WE)
             get_filename_component(LIBREAL_PATH ${LIBREAL} PATH)
+
+            message("LIBREAL :  ${LIBREAL}")
+            message("LIBREAL_NAME :  ${LIBREAL_NAME}")
+            message("LIBREAL_PATH :  ${LIBREAL_PATH}")
 
             # In "${LIBREAL_NAME}." the dot is a real dot, not a regex symbol
             # CMAKE_*_LIBRARY_SUFFIX also start with a dot
@@ -910,6 +916,8 @@ function(sofa_install_libraries)
                 "${LIBREAL_PATH}/${LIBREAL_NAME}[0-9][0-9]${CMAKE_STATIC_LIBRARY_SUFFIX}*"
                 "${LIBREAL_PATH}/${LIBREAL_NAME}.*${CMAKE_STATIC_LIBRARY_SUFFIX}*"
                 )
+            message("SHARED_LIBS :  ${SHARED_LIBS}")
+            message("STATIC_LIBS :  ${STATIC_LIBS}")
 
             # Install the libs
             if(WIN32)
