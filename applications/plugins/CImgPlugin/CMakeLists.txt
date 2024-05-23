@@ -96,7 +96,11 @@ target_link_libraries(${PROJECT_NAME} INTERFACE CImg)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_TARGETS})
 
 if(SOFA_BUILD_RELEASE_PACKAGE OR CMAKE_SYSTEM_NAME STREQUAL Windows)
-    sofa_install_libraries(TARGETS ${DEP_TARGETS})
+    if(WIN32)
+        install(IMPORTED_RUNTIME_ARTIFACTS ${DEP_TARGETS} DESTINATION "bin" COMPONENT applications)
+    else()
+        install(IMPORTED_RUNTIME_ARTIFACTS ${DEP_TARGETS} DESTINATION "lib" COMPONENT applications)
+    endif()
 endif()
 
 if(MSVC)
