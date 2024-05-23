@@ -921,9 +921,9 @@ function(sofa_install_libraries)
 
             # Install the libs
             if(WIN32)
-                install(FILES ${SHARED_LIBS} DESTINATION "bin" COMPONENT applications)
+                install(IMPORTED_RUNTIME_ARTIFACTS ${SHARED_LIBS} DESTINATION "bin" COMPONENT applications)
             else()
-                install(FILES ${SHARED_LIBS} DESTINATION "lib" COMPONENT applications)
+                install(IMPORTED_RUNTIME_ARTIFACTS ${SHARED_LIBS} DESTINATION "lib" COMPONENT applications)
             endif()
             install(FILES ${STATIC_LIBS} DESTINATION "lib" COMPONENT libraries)
 
