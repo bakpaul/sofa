@@ -479,13 +479,14 @@ void UniformMass<DataTypes>::addGravityToV(const MechanicalParams* mparams,
 }
 
 template <class DataTypes>
-void UniformMass<DataTypes>::addForce ( const core::MechanicalParams*, DataVecDeriv& vf, const DataVecCoord& /*x*/, const DataVecDeriv& /*v*/ )
+void UniformMass<DataTypes>::addForce ( const core::MechanicalParams*, DataVecDeriv& vf, const DataVecCoord& /*x*/, const DataVecDeriv& v )
 {
     //if gravity was added separately (in solver's "solve" method), then nothing to do here
     if ( this->m_separateGravity.getValue() )
         return;
 
     helper::WriteAccessor<DataVecDeriv> f = vf;
+    helper::ReadAccessor<DataVecDeriv> vel = v;
     const auto & pos = this->getMState()->read(core::ConstVecCoordId::position())->getValue();
 
     // weight
@@ -501,7 +502,10 @@ void UniformMass<DataTypes>::addForce ( const core::MechanicalParams*, DataVecDe
     for (const auto i : indices)
     {
         if constexpr (std::is_same<defaulttype::Rigid3Types, DataTypes>::value)
+        {
             f[i] += theGravity*m.rotate(pos[i].getOrientation());
+            f[i] -= defaulttype::Rigid3Types::Deriv(type::Vec3d(),type::cross(vel[i].getVOrientation(),m.rotate(pos[i].getOrientation()).inertiaMassMatrix*vel[i].getVOrientation()));
+        }
         else
             f[i] += theGravity*m;
     }
