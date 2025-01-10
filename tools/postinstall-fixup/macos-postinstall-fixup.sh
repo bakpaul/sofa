@@ -56,6 +56,12 @@ fi
 
 move_metis "$INSTALL_DIR"
 
+
+
+# Generate stubfiles
+generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
+
+
 echo "Fixing up libs manually ..."
 
 check-all-deps() {
@@ -211,9 +217,5 @@ if [ -d "$BUNDLE_DIR" ]; then
     done
     cat install_name_tool.errors.log | grep -v 'file already has LC_RPATH for' >&2
 fi
-
-
-# Generate stubfiles
-generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
 
 echo "Done."
