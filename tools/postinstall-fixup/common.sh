@@ -84,31 +84,30 @@ function generate_stubfiles()
         echo "Usage: generate_stubfiles <VM_PYTHON3_EXECUTABLE> <SRC_DIR> <INSTALL_DIR> [VM_IS_WINDOWS = 0]"; exit 1
     fi
 
-
     if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
-        export SOFA_ROOT="$INSTALL_DIR"
-
         if [ $VM_IS_WINDOWS -ne 0 ]; then
-
             pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
             pythonroot="$(cd "$pythonroot" && pwd)"
             export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
             PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\\generate_stubs.py
-            PYTHON_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
-            export PYTHONPATH="$PYTHON_SITE_PACKAGE_DIR:$PYTHONPATH"
-
+            PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
+            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
         else
-
             PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
-            PYTHON_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
-            export PYTHONPATH="$PYTHON_SITE_PACKAGE_DIR:$PYTHONPATH"
-
+            PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
+            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
         fi
+
+        export SOFA_ROOT="$BUILD_DIR"
+        export PYTHONPATH="$PYTHON_BUILD_SITE_PACKAGE_DIR:$PYTHONPATH"
+
+        #Create folder if not already created
+        mkdir -p "$PYTHON_INSTALL_SITE_PACKAGE_DIR"
 
         python_exe="$VM_PYTHON3_EXECUTABLE"
         if [ -n "$python_exe" ]; then
-            echo "Launching the stub generation with '$python_exe ${PYTHON_SCRIPT} -d $PYTHON_SITE_PACKAGE_DIR -m Sofa --use_pybind11'"
-            $python_exe "${PYTHON_SCRIPT}" -d "$PYTHON_SITE_PACKAGE_DIR" -m Sofa --use_pybind11
+            echo "Launching the stub generation with '$python_exe ${PYTHON_SCRIPT} -d $PYTHON_INSTALL_SITE_PACKAGE_DIR -m Sofa --use_pybind11'"
+            $python_exe "${PYTHON_SCRIPT}" -d "$PYTHON_INSTALL_SITE_PACKAGE_DIR" -m Sofa --use_pybind11
         fi
     else
         echo "VM_PYTHON3_EXECUTABLE doe not point to an existing file. To generate stubfiles you should point this env var to the Python3.XX executable."
