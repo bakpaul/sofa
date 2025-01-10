@@ -86,6 +86,8 @@ function generate_stubfiles()
 
     if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         if [ $VM_IS_WINDOWS -ne 0 ]; then
+            mkdir -p "$INSTALL_DIR\plugins\SofaPython3\lib\python3\site-packages"
+
             pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
             pythonroot="$(cd "$pythonroot" && pwd)"
             export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
@@ -93,6 +95,8 @@ function generate_stubfiles()
             PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
             PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
         else
+            mkdir -p "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages"
+
             PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
             PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
             PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
@@ -102,7 +106,6 @@ function generate_stubfiles()
         export PYTHONPATH="$PYTHON_BUILD_SITE_PACKAGE_DIR:$PYTHONPATH"
 
         #Create folder if not already created
-        mkdir -p "$PYTHON_INSTALL_SITE_PACKAGE_DIR"
 
         python_exe="$VM_PYTHON3_EXECUTABLE"
         if [ -n "$python_exe" ]; then
