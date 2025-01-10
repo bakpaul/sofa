@@ -69,6 +69,7 @@ function move_metis()
 
 function generate_stubfiles()
 {
+    echo "Generate stubfiles..."
 
     if [ "$#" -ge 3 ]; then
         VM_PYTHON3_EXECUTABLE="$1"
@@ -84,7 +85,6 @@ function generate_stubfiles()
     fi
 
 
-    echo "Generate stubfiles..."
     if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         export SOFA_ROOT="$INSTALL_DIR"
 
@@ -93,7 +93,7 @@ function generate_stubfiles()
             pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
             pythonroot="$(cd "$pythonroot" && pwd)"
             export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
-            PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\generate_stubs.py
+            PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\\generate_stubs.py
             PYTHON_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
             export PYTHONPATH="$PYTHON_SITE_PACKAGE_DIR:$PYTHONPATH"
 

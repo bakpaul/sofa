@@ -23,6 +23,7 @@ fi
 
 echo "SCRIPT_DIR = $SCRIPT_DIR"
 echo "INSTALL_DIR = $INSTALL_DIR"
+echo "SRC_DIR = $SRC_DIR"
 echo "BUNDLE_DIR = $BUNDLE_DIR"
 echo "QT_LIB_DIR = $QT_LIB_DIR"
 echo "QT_DATA_DIR = $QT_DATA_DIR"
@@ -55,8 +56,6 @@ elif [ -d "$QT_DATA_DIR" ]; then
 fi
 
 move_metis "$INSTALL_DIR"
-
-
 
 # Generate stubfiles
 generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
