@@ -41,4 +41,4 @@ cd "$INSTALL_DIR" && find -name "*.dll" -path "*/collections/*" | while read lib
 done
 
 # Generate stubfiles
-generate_stubfiles 1 || true
+generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" 1 || true

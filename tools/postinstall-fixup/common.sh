@@ -69,17 +69,26 @@ function move_metis()
 
 function generate_stubfiles()
 {
-    if [ "$#" -eq 0 ]; then
-        VM_IS_WINDOWS=0
+
+    if [ "$#" -ge 3 ]; then
+        VM_PYTHON3_EXECUTABLE="$1"
+        SRC_DIR="$(cd $2 && pwd)"
+        INSTALL_DIR="$(cd $3 && pwd)"
+        if [ "$#" -eq 3 ]; then
+            VM_IS_WINDOWS=0
+        else
+            VM_IS_WINDOWS=$4
+        fi
     else
-        VM_IS_WINDOWS=$1
+        echo "Usage: generate_stubfiles <VM_PYTHON3_EXECUTABLE> <SRC_DIR> <INSTALL_DIR> [VM_IS_WINDOWS = 0]"; exit 1
     fi
+
 
     echo "Generate stubfiles..."
     if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         export SOFA_ROOT="$INSTALL_DIR"
 
-        if $VM_IS_WINDOWS; then
+        if [ $VM_IS_WINDOWS -ne 0 ]; then
 
             pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
             pythonroot="$(cd "$pythonroot" && pwd)"

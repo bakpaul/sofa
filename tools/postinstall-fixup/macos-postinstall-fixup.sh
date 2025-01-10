@@ -7,7 +7,7 @@ usage() {
 
 if [ "$#" -ge 1 ]; then
     SCRIPT_DIR="$(cd $1 && pwd)"
-    SCRIPT_DIR="$(cd $2 && pwd)"
+    SRC_DIR="$(cd $2 && pwd)"
     INSTALL_DIR="$(cd $3 && pwd)"
     QT_LIB_DIR="$4"
     QT_DATA_DIR="$5"
@@ -214,6 +214,6 @@ fi
 
 
 # Generate stubfiles
-generate_stubfiles || true
+generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
 
 echo "Done."
