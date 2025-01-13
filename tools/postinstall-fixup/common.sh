@@ -93,13 +93,13 @@ function generate_stubfiles()
             export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
             PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\\generate_stubs.py
             PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
-            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
+            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/lib/python3/site-packages" && pwd -W )
         else
             mkdir -p "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages"
 
             PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
             PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
-            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
+            PYTHON_BUILD_SITE_PACKAGE_DIR=$(cd "$BUILD_DIR/lib/python3/site-packages" && pwd )
         fi
 
         export SOFA_ROOT="$BUILD_DIR"
