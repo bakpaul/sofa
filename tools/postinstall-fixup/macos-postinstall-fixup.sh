@@ -57,9 +57,6 @@ fi
 
 move_metis "$INSTALL_DIR"
 
-# Generate stubfiles
-generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
-
 
 echo "Fixing up libs manually ..."
 

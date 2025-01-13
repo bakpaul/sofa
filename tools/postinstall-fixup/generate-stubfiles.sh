@@ -18,7 +18,7 @@ else
 fi
 
 if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
-    if [ "$SYSTEM_NAME" = "WINDOWS" ]; then
+    if [ "$SYSTEM_NAME" = "Windows" ]; then
         pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
         pythonroot="$(cd "$pythonroot" && pwd)"
         export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
@@ -30,11 +30,11 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
     fi
 
-    export SOFA_ROOT="$BUILD_DIR"
+    export SOFA_ROOT="$INSTALL_DIR"
     export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHONPATH"
 
     echo "SOFA_ROOT=$SOFA_ROOT"
-    echo "PYTHONPATH=PYTHONPATH"
+    echo "PYTHONPATH=$PYTHONPATH"
 
     #Create folder if not already created
 

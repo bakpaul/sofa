@@ -226,7 +226,4 @@ echo "  Fixing RPATH: done."
 echo "Fixing up libs: done."
 rm -f postinstall_deps_*
 
-# Generate stubfiles
-#generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" || true
-
 exit 0

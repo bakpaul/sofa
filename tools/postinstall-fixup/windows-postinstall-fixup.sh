@@ -40,6 +40,3 @@ done
 cd "$INSTALL_DIR" && find -name "*.dll" -path "*/collections/*" | while read lib; do
     cp "$lib" "$INSTALL_DIR_BIN"
 done
-
-# Generate stubfiles
-generate_stubfiles "$VM_PYTHON3_EXECUTABLE" "$SRC_DIR" "$INSTALL_DIR" 1 || true
