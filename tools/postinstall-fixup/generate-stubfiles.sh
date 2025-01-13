@@ -24,6 +24,7 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
         PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\\generate_stubs.py
         PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
+        echo "PATH=$PATH"
     else
         PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
         PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
@@ -31,6 +32,9 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
 
     export SOFA_ROOT="$BUILD_DIR"
     export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHONPATH"
+
+    echo "SOFA_ROOT=$SOFA_ROOT"
+    echo "PYTHONPATH=PYTHONPATH"
 
     #Create folder if not already created
 
