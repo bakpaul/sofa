@@ -160,7 +160,7 @@ check-all-deps() {
 
                 if [  -n "$libpython" ]; then
                     echo "install_name_tool -add_rpath \"/usr/local/Frameworks/\" $libbasename"
-                    install_name_tool -add_rpath "/usr/local/Frameworks/" $libbasename
+                    install_name_tool -add_rpath "/usr/local/Frameworks/" $lib
                 fi
             fi
         done
