@@ -37,7 +37,7 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
 
         else
           PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
-          export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHON_INSTALL_SITE_PACKAGE_DIR_LIB:$PYTHONPATH"
+          export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHONPATH"
           export PATH="$INSTALL_DIR/lib:$INSTALL_DIR/bin:$INSTALL_DIR/plugins/SofaPython3/lib:$INSTALL_DIR/plugins/SofaPython3/bin:$pythonroot/Lib:$PATH"
           export SOFA_ROOT="$INSTALL_DIR"
 
