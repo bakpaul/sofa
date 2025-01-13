@@ -157,6 +157,11 @@ check-all-deps() {
                 libbasename="$(basename $lib)"
                 echo "install_name_tool -change $dep @rpath/$rpathlib $libbasename"
                 install_name_tool -change $dep @rpath/$rpathlib $lib
+
+                if [  -n "$libpython" ]; then
+                    echo "install_name_tool -change $dep @rpath/$rpathlib $libbasename"
+                    install_name_tool -add_rpath "/usr/local/Frameworks/"
+                fi
             fi
         done
     done
