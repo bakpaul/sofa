@@ -22,28 +22,35 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         pythonroot="$(dirname $VM_PYTHON3_EXECUTABLE)"
         pythonroot="$(cd "$pythonroot" && pwd)"
         export PATH="$pythonroot:$pythonroot/DLLs:$pythonroot/Lib:$PATH"
-        PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd -W )\\generate_stubs.py
+        PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
 
         if [[ $SYSTEM_NAME = "Windows:NSIS" ]]; then
-          PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/applications/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
-          PYTHON_INSTALL_SITE_PACKAGE_DIR_LIB=$(cd "$INSTALL_DIR/libraries/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
+          PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/applications/plugins/SofaPython3/lib/python3/site-packages" && pwd )
+          PYTHON_INSTALL_SITE_PACKAGE_DIR_LIB=$(cd "$INSTALL_DIR/libraries/plugins/SofaPython3/lib/python3/site-packages" && pwd )
           export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHON_INSTALL_SITE_PACKAGE_DIR_LIB:$PYTHONPATH"
 
           export PATH="$INSTALL_DIR/applications/lib:$INSTALL_DIR/applications/bin:$INSTALL_DIR/applications/plugins/SofaPython3/lib:$INSTALL_DIR/applications/plugins/SofaPython3/bin:$pythonroot/Lib:$PATH"
           export PATH="$INSTALL_DIR/libraries/lib:$INSTALL_DIR/libraries/bin:$INSTALL_DIR/libraries/plugins/SofaPython3/lib:$INSTALL_DIR/libraries/plugins/SofaPython3/bin:$pythonroot/Lib:$PATH"
+
+          export SOFA_ROOT="$INSTALL_DIR/applications"
+
+
         else
-          PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd -W )
+          PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
           export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHON_INSTALL_SITE_PACKAGE_DIR_LIB:$PYTHONPATH"
           export PATH="$INSTALL_DIR/lib:$INSTALL_DIR/bin:$INSTALL_DIR/plugins/SofaPython3/lib:$INSTALL_DIR/plugins/SofaPython3/bin:$pythonroot/Lib:$PATH"
+          export SOFA_ROOT="$INSTALL_DIR"
+
         fi
         echo "PATH=$PATH"
     else
         PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
         PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
+        export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHONPATH"
+        export SOFA_ROOT="$INSTALL_DIR"
+
     fi
 
-    export SOFA_ROOT="$INSTALL_DIR"
-    export PYTHONPATH="$PYTHON_INSTALL_SITE_PACKAGE_DIR:$PYTHONPATH"
 
     echo "SOFA_ROOT=$SOFA_ROOT"
     echo "PYTHONPATH=$PYTHONPATH"
