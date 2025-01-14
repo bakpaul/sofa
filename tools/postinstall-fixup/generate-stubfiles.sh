@@ -41,6 +41,9 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
           export PATH="$INSTALL_DIR/lib:$INSTALL_DIR/bin:$INSTALL_DIR/plugins/SofaPython3/lib:$INSTALL_DIR/plugins/SofaPython3/bin:$pythonroot/Lib:$PATH"
           export SOFA_ROOT="$INSTALL_DIR"
 
+          echo $(ls $PYTHON_INSTALL_SITE_PACKAGE_DIR)
+          echo $(ls $SOFA_ROOT)
+
         fi
         echo "PATH=$PATH"
     else
