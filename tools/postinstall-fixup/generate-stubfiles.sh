@@ -45,7 +45,7 @@ if [ -e "$VM_PYTHON3_EXECUTABLE" ]; then
         echo "PATH=$PATH"
     else
         PYTHON_SCRIPT=$(cd "$SRC_DIR/applications/plugins/SofaPython3/scripts" && pwd )/generate_stubs.py
-        if[[ $SYSTEM_NAME = *"IFW" ]]; then
+        if [[ $SYSTEM_NAME = *"IFW" ]]; then
           INSTALL_DIR="$INSTALL_DIR/packages/Runtime/data/"
         fi
         PYTHON_INSTALL_SITE_PACKAGE_DIR=$(cd "$INSTALL_DIR/plugins/SofaPython3/lib/python3/site-packages" && pwd )
