@@ -168,7 +168,10 @@ jobs:
           . ${CI_DIR}/scripts/utils.sh
 
           ## Setup env variables
-          # TODO: be able to get hostname to load correct env file --> set NODE_NAME=$hostname
+          CI_PYTHON3_VERSION=${{ inputs.python-version }} # Needed by load-vm-env
+          # TODO: be able to get hostname to load correct env file --> set 
+          host_name="sofa-ci-dev-ubuntu2204-0"
+          NODE_NAME="$host_name" # Needed by load-vm-env
           # then run 
           load-vm-env
 
@@ -200,8 +203,8 @@ jobs:
 
           . ${CI_DIR}/scripts/configure.sh "$BUILD_DIR" "$SRC_DIR" "$CONFIG" "$BUILD_TYPE" "$BUILD_OPTIONS" "$CMAKE_OPTIONS"
 
-
-
+          ## Call to build 
+          $SCRIPT_DIR/compile.sh "$BUILD_DIR" "$CONFIG" "$BUILD_OPTIONS"
 
 
       - name: Notify dashboard
