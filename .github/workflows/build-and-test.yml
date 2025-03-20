@@ -162,6 +162,8 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
+          #TODO
+          #HEre we use docker if possible
 
           . ${CI_DIR}/scripts/utils.sh
 
@@ -169,8 +171,6 @@ jobs:
           # TODO: be able to get hostname to load correct env file --> set NODE_NAME=$hostname
           # then run 
           load-vm-env
-
-
 
           ## Deal with ci-depends-on
           # Loop over each key-value pair in the JSON avoiding ci repository if inside
@@ -202,8 +202,7 @@ jobs:
 
 
 
-          #TODO
-          #HEre we use docker if possible
+
 
       - name: Notify dashboard
         shell: bash
