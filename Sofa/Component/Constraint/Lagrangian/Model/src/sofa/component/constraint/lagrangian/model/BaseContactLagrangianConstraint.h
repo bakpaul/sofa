@@ -43,6 +43,10 @@ struct BaseContactParams
     virtual bool hasTangentialComponent() const = 0;
 };
 
+template<typename T>
+concept isVec3 = (std::same_as<T, defaulttype::Vec3dTypes>);
+
+
 template<class DataTypes, class ContactParams>
 class BaseContactLagrangianConstraint : public core::behavior::PairInteractionConstraint<DataTypes>
 {
@@ -149,7 +153,11 @@ public:
     virtual void getConstraintResolution(const core::ConstraintParams *,std::vector<core::behavior::ConstraintResolution*>& resTab, unsigned int& offset) =0;
     bool isActive() const override;
 
+
     void draw(const core::visual::VisualParams* vparams) override;
+
+    void doDraw(const core::visual::VisualParams* vparams) requires(isVec3<DataTypes>);
+    void doDraw(const core::visual::VisualParams* vparams) requires(!isVec3<DataTypes>);
 };
 
 

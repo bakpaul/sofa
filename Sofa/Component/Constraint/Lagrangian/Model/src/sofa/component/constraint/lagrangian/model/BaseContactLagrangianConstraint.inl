@@ -24,11 +24,11 @@
 #include <sofa/core/ConstraintParams.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
+#include <sofa/defaulttype/VecTypes.h>
 #include <sofa/type/RGBAColor.h>
 
 namespace sofa::component::constraint::lagrangian::model
 {
-
 template<class DataTypes, class ContactParams>
 BaseContactLagrangianConstraint<DataTypes, ContactParams>::BaseContactLagrangianConstraint(MechanicalState* object1, MechanicalState* object2)
     : Inherit(object1, object2)
@@ -50,7 +50,7 @@ void BaseContactLagrangianConstraint<DataTypes, ContactParams>::clear(int reserv
 {
     contacts.clear();
     if (reserve)
-    contacts.reserve(reserve);
+        contacts.reserve(reserve);
 }
 
 template<class DataTypes, class ContactParams>
@@ -294,18 +294,18 @@ void BaseContactLagrangianConstraint<DataTypes, ContactParams>::getConstraintVio
 {
     switch (cparams->constOrder())
     {
-    case core::ConstraintOrder::POS_AND_VEL :
-    case core::ConstraintOrder::POS :
-        getPositionViolation(v);
+        case core::ConstraintOrder::POS_AND_VEL :
+        case core::ConstraintOrder::POS :
+            getPositionViolation(v);
         break;
 
-    case core::ConstraintOrder::ACC :
-    case core::ConstraintOrder::VEL :
-        getVelocityViolation(v);
+        case core::ConstraintOrder::ACC :
+        case core::ConstraintOrder::VEL :
+            getVelocityViolation(v);
         break;
 
-    default :
-        msg_error() << "BaseContactLagrangianConstraint doesn't implement " << cparams->getName() << " constraint violation\n";
+        default :
+            msg_error() << "BaseContactLagrangianConstraint doesn't implement " << cparams->getName() << " constraint violation\n";
         break;
     }
 }
@@ -339,10 +339,19 @@ bool BaseContactLagrangianConstraint<DataTypes, ContactParams>::isActive() const
     return false;
 }
 
+
+
 template<class DataTypes, class ContactParams>
 void BaseContactLagrangianConstraint<DataTypes, ContactParams>::draw(const core::visual::VisualParams* vparams)
 {
+    doDraw(vparams);
+}
+
+template<class DataTypes, class ContactParams>
+void BaseContactLagrangianConstraint<DataTypes, ContactParams>::doDraw(const core::visual::VisualParams* vparams) requires(isVec3<DataTypes>)
+{
     if (!vparams->displayFlags().getShowInteractionForceFields()) return;
+
 
     const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
     vparams->drawTool()->disableLighting();
@@ -365,10 +374,12 @@ void BaseContactLagrangianConstraint<DataTypes, ContactParams>::draw(const core:
 
     }
     vparams->drawTool()->drawLines(otherVertices, 3, otherColors);
+}
 
-
-
-
+template<class DataTypes, class ContactParams>
+void BaseContactLagrangianConstraint<DataTypes, ContactParams>::doDraw(const core::visual::VisualParams* vparams) requires(!isVec3<DataTypes>)
+{
+    SOFA_UNUSED(vparams);
 }
 
 } //namespace sofa::component::constraint::lagrangian::model
