@@ -177,6 +177,10 @@ def extract_ci_depends_on():
                 "repo_url": repo_url,
                 "branch_name": branch_name
             }
+        
+        match = re.search(r'\[with-all-tests\]', line)
+        if match:
+            with_all_tests_found = True
 
 
 # ========================================================================
