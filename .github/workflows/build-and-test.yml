@@ -55,7 +55,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ${{ fromJson(inputs.os) }}
+        os: ${{ fromJson(inputs.builder-os) }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Configure builder
@@ -123,6 +123,8 @@ jobs:
               ci_repo_url=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.repo_url)
               ci_branch=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.branch_name)
           fi
+          echo "CI_BRANCH=$ci_branch" >> $GITHUB_ENV
+
 
           echo "Cloning CI from remote ${ci_repo_url}, selecting branch ${ci_branch}"
           
@@ -164,6 +166,7 @@ jobs:
         run: |
           #TODO
           #HEre we use docker if possible
+
 
           . ${CI_DIR}/scripts/utils.sh
 
