@@ -112,7 +112,7 @@ jobs:
           echo "Cloning SOFA at commit $GITHUB_WORKFLOW_SHA"
           if [ -d  $WORKSPACE/sofa ]; then
               rm -rf $WORKSPACE/sofa 
-          if
+          fi
           SRC_DIR=$(pwd)/sofa
           echo "SRC_DIR=$SRC_DIR" >> $GITHUB_ENV
 
