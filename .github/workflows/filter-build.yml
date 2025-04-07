@@ -261,10 +261,10 @@ jobs:
       preset: ${{ needs.set-vars.outputs.PRESET }}
       python-version: ${{ needs.set-vars.outputs.PYTHON_VERSION }}
       ci-depends-on: ${{ needs.set-vars.outputs.CI_DEPENDS_ON }}
-      with-all-tests: ${{ needs.set-vars.outputs.WITH_ALL_TESTS }}
-      force-full-build: ${{ needs.set-vars.outputs.FORCE_FULL_BUILD }}
+      with-all-tests: ${{ needs.set-vars.outputs.WITH_ALL_TESTS == 'true'}}
+      force-full-build: ${{ needs.set-vars.outputs.FORCE_FULL_BUILD == 'true'}}
       out-of-tree-build: ${{ needs.set-vars.outputs.OUT_OF_TREE_BUILD }}
-      generate-binaries: ${{ needs.set-vars.outputs.GENERATE_BINARIES }}
+      generate-binaries: ${{ needs.set-vars.outputs.GENERATE_BINARIES == 'true'}}
       pr-owner-url: ${{ needs.set-vars.outputs.PR_OWNER_URL }}
       pr-branch-name: ${{ needs.set-vars.outputs.PR_BRANCH_NAME }}
       pr-commit-sha: ${{ needs.set-vars.outputs.PR_COMMIT_SHA }}
