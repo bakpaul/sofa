@@ -24,7 +24,7 @@ class PresetLookup():
         for preset in self.presetsDict["configurePresets"]:
             if "cacheVariables" in preset:
                 for varName in preset["cacheVariables"].keys():
-                    if projectCorrectedName in varName:
+                    if projectCorrectedName in varName and preset["cacheVariables"][varName]["value"] == "ON":
                         currPresetName = preset["name"]
                         if "hidden" not in preset or not preset["hidden"]:
                             presetNames.append(currPresetName)
@@ -149,5 +149,5 @@ def sortProjectByNames(projectList:Projects):
 
 if __name__ == "__main__":
     lookup = PresetLookup("../../CMakePresets.json")
-    outList = lookup.getListOfPResetsContainingProject("RUNSOFA")
+    outList = list(set(lookup.getListOfPResetsContainingProject("SOFA_QT")))
     print(outList)
