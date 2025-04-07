@@ -108,6 +108,8 @@ jobs:
       - name: Clone SOFA and CI
         shell: bash
         run: |
+          cd $WORKSPACE
+
           ## Clone sofa and merge origin master
           echo "Cloning SOFA at commit $GITHUB_WORKFLOW_SHA"
           if [ -d  $WORKSPACE/sofa ]; then
@@ -158,7 +160,6 @@ jobs:
           CI_DIR=$WORKSPACE/ci
           echo "CI_DIR=$CI_DIR" >> $GITHUB_ENV
 
-          git init
           git clone -b ${ci_branch} --single-branch ${ci_repo_url}
 
           cd $WORKSPACE
