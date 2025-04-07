@@ -191,8 +191,30 @@ jobs:
         run: |
           #TODO
           #HEre we use docker if possible
+          #If os uses docker
 
+          if [[ "${{ matrix.os }}" == *"ubuntu"* ]] || [[ "${{ matrix.os }}" == *"fedora"* ]]; then
+              builder_type=$(echo "${{ matrix.os }}" | awk -F '_' '{print $1}' | awk -F '-' '{print $2}')
+              if [[ "${{ inputs.sofa-branch-name }}" == "master" ]] || [[ "${{ inputs.sofa-branch-name }}" =~ ^v[0-9]{2}\.[0-9]{2}$ ]]; then
+                default_tag=${{ inputs.sofa-branch-name }}
+              else
+                default_tag=master
+              fi              
+
+              echo "Pulling Docker image sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} ..."
+              docker pull --quiet sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} | true
+
+              if [[ "$(docker images)" != *"sofaframework/sofabuilder_${builder_type}:${CI_BRANCH}"*  ]]; then
+                echo "Docker image sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} doesn't exist, pulling default tag ${default_tag} "
+                docker pull --quiet sofaframework/sofabuilder_${builder_type}:${default_tag}
+              fi
+
+              echo "INSIDE_DOCKER=true" >> $GITHUB_ENV
+              
+          fi
+          
           # Setup variables for following calls
+
           . ${CI_DIR}/scripts/utils.sh
           NODE_NAME="$(hostname)" # Needed by load-vm-env --> TODO: be able to get hostname multiplatform
           SCRIPT_DIR=${CI_DIR}/scripts/  # Needed by load-vm-env, might need to run this inside the docker env
