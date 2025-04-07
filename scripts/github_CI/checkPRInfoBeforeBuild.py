@@ -94,7 +94,6 @@ def check_comments():
         exit(1)
 
     comments = [comment['body'].lower() for comment in response.json()]
-    print(f"Comments found: {comments}")
 
     if any("[with-all-tests]" in comment for comment in comments):
         with_all_tests_found = True
@@ -116,8 +115,6 @@ def export_pr_info():
         exit(1)
 
     pr_data = response.json()
-
-    print(str(pr_data))
 
     pr_url = str(pr_data['user']['html_url']) + "/" + str(pr_data['base']['repo']['name'])
     pr_branch_name = pr_data['head']['ref']
