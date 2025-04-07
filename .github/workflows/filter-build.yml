@@ -256,7 +256,7 @@ jobs:
     needs: filter_build
     uses: bakpaul/sofa/.github/workflows/build-and-test.yml@hugtalbot-patch-3
     with:
-      sofa-branch-name: ${{ needs.set-vars.outputs.SOFA_BRANCH_NAME }}
+      sofa-branch-name: ${{ fromJson(needs.set-vars.outputs.SOFA_BRANCH_NAME) }}
       sofa-commit-sha: ${{ needs.set-vars.outputs.SOFA_COMMIT_SHA }}
       preset: ${{ needs.set-vars.outputs.PRESET }}
       python-version: ${{ needs.set-vars.outputs.PYTHON_VERSION }}
