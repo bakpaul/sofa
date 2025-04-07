@@ -253,7 +253,6 @@ jobs:
 
   # Trigger the build with all parameters
   call-workflow-passing-data:
-    runs-on: ubuntu-latest
     needs: filter_build
     uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
     with:
