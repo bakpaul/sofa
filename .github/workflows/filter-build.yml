@@ -269,5 +269,3 @@ jobs:
       pr-branch-name: ${{ needs.set-vars.outputs.PR_BRANCH_NAME }}
       pr-commit-sha: ${{ needs.set-vars.outputs.PR_COMMIT_SHA }}
       builder-os: ${{ needs.set-vars.outputs.BUILDER_OS }}
-    secrets:
-      personal_access_token: ${{ secrets.GITHUB_TOKEN }}
