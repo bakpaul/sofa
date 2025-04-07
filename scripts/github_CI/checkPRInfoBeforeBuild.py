@@ -218,7 +218,7 @@ if to_review_label_found and not is_draft_pr:
         env_file.write(f"WITH_ALL_TESTS={with_all_tests_found}\n")
         env_file.write(f"FORCE_FULL_BUILD={force_full_build_found}\n")
         env_file.write(f"CI_DEPENDS_ON={dependency_dict}\n")
-        env_file.write(f"BUILDER_OS=[\\\"sh-ubuntu_gcc_release\\\",\\\"sh-fedora_clang_release\\\",\\\"sh-windows_vs2022_release\\\",\\\"sh-macos_clang_release\\\"]")
+        env_file.write(f"BUILDER_OS=\\\"[\\\"sh-ubuntu_gcc_release\\\",\\\"sh-fedora_clang_release\\\",\\\"sh-windows_vs2022_release\\\",\\\"sh-macos_clang_release\\\"]\\\"")
 
 
 # ========================================================================
