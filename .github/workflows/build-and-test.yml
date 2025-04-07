@@ -52,6 +52,26 @@ on:
         description: 'Json scructure with three parameters {"COMMIT_HASH":"fullhsashofthecommit", }'
 
 jobs:
+  display:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display
+        shell: bash
+        run: |
+            echo ${{ inputs.sofa-branch-name }}
+            echo ${{ inputs.sofa-commit-sha }}
+            echo ${{ inputs.pr-owner-url }}
+            echo ${{ inputs.pr-branch-name }}
+            echo ${{ inputs.pr-commit-sha }}
+            echo ${{ inputs.preset }}
+            echo ${{ inputs.python-version }}
+            echo ${{ inputs.ci-depends-on }}
+            echo ${{ inputs.with-all-tests }}
+            echo ${{ inputs.force-full-build }}
+            echo ${{ inputs.generate-binaries }}
+            echo ${{ inputs.out-of-tree-build }}
+            echo ${{ inputs.builder-os }}
+
   build:
     strategy:
       matrix:
