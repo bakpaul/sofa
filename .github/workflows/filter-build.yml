@@ -247,6 +247,9 @@ jobs:
           echo "PR_COMMIT_SHA=${PR_COMMIT_SHA}" >> $GITHUB_OUTPUT
           echo "BUILDER_OS=${BUILDER_OS}" >> $GITHUB_OUTPUT
 
+          echo "$GITHUB_OUTPUT"
+          cat $GITHUB_OUTPUT
+
 
   # ===============================================================
   # ===============================================================
