@@ -140,7 +140,7 @@ jobs:
           cd $WORKSPACE
  
           ## Clone CI and use ci-depends-on structure
-          ci_branch="inputs.sofa-branch-name"
+          ci_branch=${{ inputs.sofa-branch-name }}
           ci_repo_url="https://www.github.com/sofa-framework/ci"
 
           # check if ci has a ci-depends-on 
