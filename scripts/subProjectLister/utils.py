@@ -16,20 +16,20 @@ class PresetLookup():
         for preset in self.presetsDict["configurePresets"]:
             if "inherits" in  preset and subPresetName in preset["inherits"]:
                 if "hidden" not in preset or not preset["hidden"]:
-                    print(preset["name"])
                     presetList.append(preset["name"])
                 self.getUsingPresetNames(preset["name"],presetList)
 
     def getListOfPResetsContainingProject(self, projectCorrectedName: str):
         presetNames = []
         for preset in self.presetsDict["configurePresets"]:
-            for varName in preset["cacheVariables"].keys():
-                if projectCorrectedName in varName:
-                    currPresetName = preset["name"]
-                    if "hidden" not in preset or not preset["hidden"]:
-                        print(currPresetName)
-                        presetNames.append(currPresetName)
-                    self.getUsingPresetNames(currPresetName,presetNames)
+            if "cacheVariables" in preset:
+                for varName in preset["cacheVariables"].keys():
+                    if projectCorrectedName in varName:
+                        currPresetName = preset["name"]
+                        if "hidden" not in preset or not preset["hidden"]:
+                            presetNames.append(currPresetName)
+                        self.getUsingPresetNames(currPresetName,presetNames)
+        return presetNames
 
 class Projects():
 
@@ -149,6 +149,5 @@ def sortProjectByNames(projectList:Projects):
 
 if __name__ == "__main__":
     lookup = PresetLookup("../../CMakePresets.json")
-    outList = []
-    lookup.getUsingPresetNames("RUNSOFA",outList)
+    outList = lookup.getListOfPResetsContainingProject("RUNSOFA")
     print(outList)
