@@ -8,8 +8,16 @@ OWNER_NAME = os.getenv('OWNER_NAME')
 PR_COMMIT_SHA = os.getenv('PR_COMMIT_SHA')
 
 
-if not GITHUB_TOKEN or not PR_NUMBER or not OWNER_NAME or not PR_COMMIT_SHA:
+if (not GITHUB_TOKEN) or (not PR_NUMBER) or (not OWNER_NAME) or (not PR_COMMIT_SHA):
     print("Error: Missing required environment variables.")
+    if (not GITHUB_TOKEN):
+        print("     - Missing GITHUB_TOKEN")
+    if (not PR_NUMBER):
+        print("     - Missing PR_NUMBER")
+    if (not OWNER_NAME):
+        print("     - Missing OWNER_NAME")
+    if (not PR_COMMIT_SHA):
+        print("     - Missing PR_COMMIT_SHA")
     exit(1)
 
 
@@ -43,11 +51,14 @@ def check_labels():
         exit(1)
 
     labels = [label['name'].lower() for label in response.json()]
-    print(f"Labels found: {labels}")
+    print(f"Labels found: {labels}.")
 
     if "pr: status to review" in labels:
         to_review_label_found = True
         print("PR is marked as 'to review'.")
+    else:
+        print(f"Flag to review has not been found. CI will stop.")
+        exit(1)
 
 
 # ========================================================================
@@ -106,7 +117,9 @@ def export_pr_info():
 
     pr_data = response.json()
 
-    pr_url = str(pr_data['user']['html_url']) + str(pr_data['repo']['name'])
+    print(str(pr_data))
+
+    pr_url = str(pr_data['user']['html_url']) + "/" + str(pr_data['base']['repo']['name'])
     pr_branch_name = pr_data['head']['ref']
     pr_commit_sha = pr_data['head']['sha']
 
