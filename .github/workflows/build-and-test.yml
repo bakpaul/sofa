@@ -119,6 +119,7 @@ jobs:
           if [ -z "${{ inputs.pr-owner-url }}" ]; then
               echo "This is a PR, merging branch ${{ inputs.pr-branch-name }} from remote ${{ inputs.pr-owner-url }} into origin branch ${{ inputs.sofa-branch-name }}"
               git clone -b ${{ inputs.sofa-branch-name }} --single-branch https://www.github.com/sofa-framework/sofa
+              cd sofa
               git remote add pr ${{ inputs.pr-owner-url }}
               git fetch pr 
               
@@ -130,9 +131,11 @@ jobs:
           else
               echo "This is not a PR: checking out sha ${{ inputs.sofa-commit-sha }} from branch ${{ inputs.sofa-branch-name }}"
               git clone -b ${{ inputs.sofa-branch-name }} --single-branch https://www.github.com/sofa-framework/sofa
+              cd sofa
               git checkout ${{ inputs.sofa-commit-sha }}
           fi
 
+          cd $WORKSPACE
  
           ## Clone CI and use ci-depends-on structure
           ci_branch="inputs.sofa-branch-name"
