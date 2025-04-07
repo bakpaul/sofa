@@ -8,7 +8,7 @@ OWNER_NAME = os.getenv('OWNER_NAME')
 PR_COMMIT_SHA = os.getenv('PR_COMMIT_SHA')
 
 
-if not GITHUB_TOKEN or not PR_NUMBER or not REPO_NAME:
+if not GITHUB_TOKEN or not PR_NUMBER or not OWNER_NAME or not PR_COMMIT_SHA:
     print("Error: Missing required environment variables.")
     exit(1)
 
