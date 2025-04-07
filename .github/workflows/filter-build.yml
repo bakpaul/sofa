@@ -245,7 +245,7 @@ jobs:
           echo "PR_OWNER_URL=${PR_OWNER_URL}" >> $GITHUB_OUTPUT
           echo "PR_BRANCH_NAME=${PR_BRANCH_NAME}" >> $GITHUB_OUTPUT
           echo "PR_COMMIT_SHA=${PR_COMMIT_SHA}" >> $GITHUB_OUTPUT
-          echo "BUILDER_OS=${BUILDER_OS}" >> $GITHUB_OUTPUT
+          echo "BUILDER_OS=$BUILDER_OS" >> $GITHUB_OUTPUT
 
 
   # ===============================================================
