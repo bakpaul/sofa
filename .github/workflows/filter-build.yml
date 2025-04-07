@@ -254,7 +254,7 @@ jobs:
   # Trigger the build with all parameters
   call-workflow-passing-data:
     needs: filter_build
-    uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
+    uses: bakpaul/sofa/.github/workflows/build-and-test.yml@hugtalbot-patch-3
     with:
       sofa-branch-name: ${{ needs.set-vars.outputs.SOFA_BRANCH_NAME }}
       sofa-commit-sha: ${{ needs.set-vars.outputs.SOFA_COMMIT_SHA }}
