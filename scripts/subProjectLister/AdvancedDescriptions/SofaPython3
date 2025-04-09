@@ -1,1 +1,1 @@
-Plugin enabling to write SOFA scenes in Python that also introduce several Python modules that exposes different c++ components used in Sofa.
+Plugin enabling to write SOFA scenes in Python that also introduce several Python modules that exposes different C++ components used in Sofa.
