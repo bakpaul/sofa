@@ -36,10 +36,13 @@ for filename in filenames:
             if("sofa_add_subdirectory" in line):
                 arguments = line.split('(')[1].split(')')[0]
                 proj = InternalProjects.createFromArguments(arguments, cmakeFolderRelativePath, descriptionFolder)
+                proj.extractPresets(presetLookup)
                 saveProject(proj)
             elif("sofa_add_external" in line):
                 arguments = line.split('(')[1].split(')')[0]
                 proj = ExternalProjects.createFromArguments(arguments,descriptionFolder)
+                proj.extractPresets(presetLookup)
+
                 saveProject(proj)
 
 
@@ -50,6 +53,9 @@ plugins = sortProjectByNames(plugins)
 folders = sortProjectByNames(folders)
 
 ## Print markdown tables
+
+
+
 print("### Applications")
 print()
 print(printTableFromProjectListToString(applications))
@@ -60,7 +66,7 @@ print()
 print(printTableFromProjectListToString(plugins))
 print()
 
-print("### Folders")
+print("### Directories")
 print()
 print(printTableFromProjectListToString(folders))
 print()

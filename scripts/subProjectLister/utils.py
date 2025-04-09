@@ -56,8 +56,12 @@ class Projects():
 
 
     def extractPresets(self,presets : PresetLookup):
-        self.presetList = presets.getListOfPResetsContainingProject(self.getCorrectedName())
+        self.presetList = list(set(presets.getListOfPResetsContainingProject(self.getCorrectedName())))
+        self.presetList = [preset for preset in self.presetList if "-dev" not in preset]
+        self.presetList.sort()
 
+    def isPluginized(self):
+        return False
 
     def getUpperType(self):
         return self.type.upper()
@@ -98,11 +102,14 @@ class InternalProjects(Projects):
         if self.advancedDescription != "":
             return self.advancedDescription
 
-        return f"{self.type.capitalize()} named {self.name}"
+        return f"{self.type.capitalize()} named {self.name}."
 
     def getActvation(self):
-        #TODO add presets
-        return f"Set CMake flag '{self.getUpperType()}_{self.getCorrectedName()}' to ON"
+        activation = f"CMake flag `{self.getUpperType()}_{self.getCorrectedName()}=ON`. "
+        if len(self.presetList) != 0:
+            activation += f"Activated in presets {self.presetList}. "
+
+        return activation
 
 class ExternalProjects(Projects):
 
@@ -121,28 +128,34 @@ class ExternalProjects(Projects):
         repoId = argList.index("GIT_REPOSITORY") + 1
         return ExternalProjects(argList[1], argList[0], argList[tagId], argList[repoId], advancedDescriptionFolder = advancedDescriptionFolder)
 
+    def isPluginized(self):
+        return True
+
     def getDisplayName(self):
         return f"[{self.name}]({self.default_repo})"
 
     def getDescription(self):
         if self.advancedDescription != "":
             return self.advancedDescription
-        return f"External {self.type.capitalize()} named {self.name} that needs to be fetched"
+        return f"External {self.type.capitalize()} named {self.name} that needs to be fetched."
 
     def getActvation(self):
-        #TODO add presets
-        return f"To fetch it set CMake flag 'SOFA_FETCH_{self.getCorrectedName()}' to ON, then activate it by setting CMake flag '{self.getUpperType()}_{self.getCorrectedName()}' to ON"
+        activation = f"CMake flags `SOFA_FETCH_{self.getCorrectedName()}=ON` and `{self.getUpperType()}_{self.getCorrectedName()}=ON`. "
+        if len(self.presetList) != 0:
+            activation += f"Activated in presets {self.presetList}. "
+
+        return activation
 
 
 
-def printTableFromProjectListToString(projectList:Projects):
+def printTableFromProjectListToString(projectList:list[Projects]):
     output = Projects.displayFirstRow()
     for project in projectList:
         output += f"{project.displayDescription()}\n"
     return output
 
 
-def sortProjectByNames(projectList:Projects):
+def sortProjectByNames(projectList: list[Projects]):
     names = [proj.name for proj in projectList]
     sortedIdx = np.argsort(names).tolist()
     return [projectList[i] for i in sortedIdx]
