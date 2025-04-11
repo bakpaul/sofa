@@ -230,7 +230,7 @@ jobs:
               echo "dckr_pat_ohBds9gXTs9Iy91QPKJZXGdVS5s" | docker login -u sofaframework --password-stdin   
 
               echo "Pulling Docker image sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} ..."
-              docker pull --quiet sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} | true
+              docker pull --quiet sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} || true
               DOCKER_IMAGE="sofaframework/sofabuilder_${builder_type}:${CI_BRANCH}"
 
               if [[ "$(docker images)" != *"sofaframework/sofabuilder_${builder_type}:${CI_BRANCH}"*  ]]; then
