@@ -179,7 +179,7 @@ def extract_ci_depends_on():
 
             dependency_pr_data = response.json()
 
-            key = dependency_pr_data['repo']['name'] #Sofa.Qt
+            key = dependency_pr_data['head']['repo']['name'] #Sofa.Qt
             repo_url = dependency_pr_data['html_url'] #https://github.com/sofa-framework/Sofa.Qt
             branch_name = dependency_pr_data['head']['ref'] #my_feature_branch
 
