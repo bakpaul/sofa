@@ -168,7 +168,7 @@ def extract_ci_depends_on():
 
             owner = parts[3]
             repo = parts[4]
-            pull_number = parts[5]
+            pull_number = parts[6]
             dependency_request_url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}"
 
             response = requests.get(dependency_request_url, headers=HEADERS)
