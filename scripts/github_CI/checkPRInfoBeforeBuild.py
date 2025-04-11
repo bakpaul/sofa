@@ -161,7 +161,7 @@ def extract_ci_depends_on():
 
             # Ensure the URL is in the expected dependency format, e.g. https://github.com/sofa-framework/Sofa.Qt/pull/6
             parts = dependency.split('/')
-            if len(parts) != 6 or parts[0] != 'https:' or parts[1] != '' or parts[2] != 'github.com':
+            if len(parts) != 7 or parts[0] != 'https:' or parts[1] != '' or parts[2] != 'github.com':
                 raise ValueError("")
                 print(f"Invalid URL ci-depends-on format: {dependency}")
                 exit(1)
