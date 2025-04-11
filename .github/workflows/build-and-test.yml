@@ -240,9 +240,9 @@ jobs:
                 DOCKER_IMAGE="sofaframework/sofabuilder_${builder_type}:${default_tag}"
               fi
 
-              echo "Launching configuration and build through docker"
+              echo "Launching configuration and build through docker using image ${DOCKER_IMAGE}"
               docker run --rm \
-                  -user $(id -u):$(id -g) --network=host -v $workspace_root:$workspace_root \
+                  --user $(id -u):$(id -g) --network=host -v $workspace_root:$workspace_root \
                   ${DOCKER_IMAGE} \
                   /bin/bash -c "/workspace/ci/scripts/configure-and-build.sh /workspace/build/ /workspace/sofa/ /workspace/ci/scripts/ \"${NODE_NAME}\" \"${BUILD_TYPE}\" \"${CONFIG}\" \"${{ inputs.python-version }}\" \"${{ inputs.preset }}\" \"${{ inputs.generate-binaries }}\" \"${CMAKE_OPTIONS}\""              
           else
