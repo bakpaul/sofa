@@ -282,8 +282,9 @@ jobs:
 
 
           
-nightly_build:
+  nightly_build:
     runs-on: ubuntu-latest
+    if: github.event.schedule == '0 2 * * *'
     strategy:
       matrix:
         sofa_version: [master, v24.12]
@@ -334,7 +335,6 @@ nightly_build:
         uses: actions/checkout@v2
 
       - name: Run when nightly
-        if: github.event.schedule == '0 2 * * *'
         run: |
           echo "This step runs only for nightly builds."
           echo "SOFA_BRANCH_NAME=${{ matrix.sofa_version }}" >> $GITHUB_ENV
