@@ -147,7 +147,7 @@ jobs:
           ci_ci_depends_on=$(echo "${{ inputs.ci-depends-on }}" | jq .ci)
           if [ "$ci_ci_depends_on" != "null" ]; then
               ci_repo_url=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.repo_url)
-              ci_branch=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.branch_name)
+              ci_branch=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.tag_name)
           fi
           echo "CI_BRANCH=$ci_branch" >> $GITHUB_ENV
 
