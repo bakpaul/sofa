@@ -160,7 +160,7 @@ jobs:
           CI_DIR=$WORKSPACE/ci
           echo "CI_DIR=$CI_DIR" >> $GITHUB_ENV
 
-          git clone -b ${ci_branch} --single-branch ${ci_repo_url}
+          git clone -b ${ci_branch//\"} --single-branch ${ci_repo_url//\"}
 
           cd $WORKSPACE
 
