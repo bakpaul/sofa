@@ -182,10 +182,10 @@ def extract_ci_depends_on():
             key = dependency_pr_data['head']['repo']['name'] #Sofa.Qt
             repo_url = dependency_pr_data['base']['repo']['html_url'] #https://github.com/sofa-framework/Sofa.Qt
             branch_name = dependency_pr_data['head']['ref'] #my_feature_branch
-            
+
             dependency_dict[key] = {
                 "repo_url": repo_url,
-                "branch_name": merge_commit_sha
+                "branch_name": branch_name
             }
         
         match = re.search(r'\[with-all-tests\]', line)
