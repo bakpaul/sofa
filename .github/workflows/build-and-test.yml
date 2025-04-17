@@ -193,7 +193,7 @@ jobs:
           # retrive build type and compiler
           BUILD_TYPE=$(echo ${{ matrix.os }} | awk -F '_' '{print $3}')
           CONFIG=$(echo ${{ matrix.os }} | awk -F '_' '{print $1"_"$2}')
-          NODE_NAME="$(hostname)" # Needed by configure-and-build --> TODO: be able to get hostname multiplatform
+          NODE_NAME="${{ runner.name }}" # Needed by configure-and-build --> TODO: be able to get hostname multiplatform
 
           ## Deal with ci-depends-on
           # Loop over each key-value pair in the JSON avoiding ci repository if inside
