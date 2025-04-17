@@ -362,7 +362,7 @@ jobs:
   # ===============================================================
   # ===============================================================
 
-  # Trigger the build and sharing all parameters from filter_build>outputs
+  # Trigger the build and sharing all parameters from filter_build > outputs
   call-workflow-passing-data:
     needs: filter_build
     uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
