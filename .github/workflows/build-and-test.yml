@@ -91,6 +91,8 @@ jobs:
             fi
             cd $WORKSPACE
 
+            echo "Workspace folder for this build will be $WORKSPACE"
+
             ## Setup github
             # Git config (needed by CMake ExternalProject)
             if ! git config --get user.name; then
@@ -149,6 +151,7 @@ jobs:
           # check if ci has a ci-depends-on 
           ci_ci_depends_on=$(echo "${{ inputs.ci-depends-on }}" | jq .ci)
           if [ "$ci_ci_depends_on" != "null" ]; then
+              echo "ci-depends-on for ci repository detected."
               ci_repo_url=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.repo_url)
               ci_branch=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.branch_name)
           fi
@@ -178,6 +181,12 @@ jobs:
           BUILD_DIR=$WORKSPACE/build
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
 
+          echo "------ After setup ------"
+          echo "- WORKSPACE = $WORKSPACE"
+          echo "- SRC_DIR = $SRC_DIR"
+          echo "- CI_DIR = $CI_DIR"
+          echo "- BUILD_DIR = $BUILD_DIR"
+          echo "-------------------------"
 
       - name: Notify dashboard
         shell: bash
@@ -217,7 +226,10 @@ jobs:
           done
 
           if [[ ! -n "$CMAKE_OPTIONS" ]]; then
-            CMAKE_OPTIONS="no-ci-depends-on"
+              CMAKE_OPTIONS="no-ci-depends-on"
+              echo "Noe ci-depends-on detected."
+          else
+              echo "ci-depends-on detected, adding the following cmake variable : $CMAKE_OPTIONS"
           fi
 
 
