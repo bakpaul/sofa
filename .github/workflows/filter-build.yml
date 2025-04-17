@@ -19,11 +19,11 @@ on:
         default: '3.12'
         type: string
       external-plugins:
-        description: 'list of github repository to add to build tree, separated by a space'
+        description: 'List of github repository and branch name to add to build tree, separated by a space. Syntax: https://www.github.com/me/myrepo@mybranch'
         required: false
         type: string
       additionnal-cmake-flags:
-        description: 'CMake flags to add during the CMake call. This is to be used along external-plugins'
+        description: 'CMake flags to add during the CMake call. This is to be used along external-plugins. The syntax is identical to a CMake call'
         required: false
         type: string
 
