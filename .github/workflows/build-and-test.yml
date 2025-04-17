@@ -38,7 +38,10 @@ on:
         type: boolean
         required: false
         default: false
-      out-of-tree-build:
+      external-plugins:
+        type: string
+        required: false
+      additionnal-cmake-flags:
         type: string
         required: false
       builder-os:
