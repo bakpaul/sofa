@@ -181,12 +181,6 @@ jobs:
           BUILD_DIR=$WORKSPACE/build
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
 
-          echo "------ After setup ------"
-          echo "- WORKSPACE = $WORKSPACE"
-          echo "- SRC_DIR = $SRC_DIR"
-          echo "- CI_DIR = $CI_DIR"
-          echo "- BUILD_DIR = $BUILD_DIR"
-          echo "-------------------------"
 
       - name: Notify dashboard
         shell: bash
@@ -227,12 +221,29 @@ jobs:
 
           if [[ ! -n "$CMAKE_OPTIONS" ]]; then
               CMAKE_OPTIONS="no-ci-depends-on"
-              echo "Noe ci-depends-on detected."
+              echo "No ci-depends-on detected."
           else
               echo "ci-depends-on detected, adding the following cmake variable : $CMAKE_OPTIONS"
           fi
 
-
+          echo ""
+          echo "------ Before build (and docker) ------"
+          echo "Main folders:"
+          echo " - WORKSPACE = $WORKSPACE"
+          echo " - SRC_DIR = $SRC_DIR"
+          echo " - CI_DIR = $CI_DIR"
+          echo " - BUILD_DIR = $BUILD_DIR"
+          echo ""
+          echo "Configuration:"
+          echo " - NODE_NAME = $NODE_NAME"
+          echo " - BUILD_TYPE = $BUILD_TYPE" 
+          echo " - CONFIG = $CONFIG" 
+          echo " - PYTHON_VERSION = ${{ inputs.python-version }}" 
+          echo " - PRESET = ${{ inputs.preset }}"
+          echo " - GENERATE_BINARIES = ${{ inputs.generate-binaries }}"
+          echo " - ADDITIONNAL_CMAKE_OPTIONS = $CMAKE_OPTIONS"
+          echo "---------------------------------------"
+          echo ""
 
           #If os has got docker then use it
           if [[ "${{ matrix.os }}" == *"ubuntu"* ]] || [[ "${{ matrix.os }}" == *"fedora"* ]]; then
