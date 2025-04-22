@@ -38,7 +38,7 @@ on:
         default: 'full'
       os-matrix:
         type: choice
-        description: On which OS run generate the binaries
+        description: On which OS run the binaries generation
         options: 
         - '["sh-ubuntu_gcc_release"]'
         - '["sh-windows_vs2022_release"]'
