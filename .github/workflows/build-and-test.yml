@@ -312,7 +312,7 @@ jobs:
 
       - name: Launch tests
         continue-on-error: true
-        if: steps.Build.outcome == 'success' && inputs.with-all-tests == true
+        if: steps.Build.outcome == 'success'
         shell: bash
         run: |
           # If os has got docker then use it
@@ -323,11 +323,11 @@ jobs:
               docker run --rm \
                   --user $(id -u):$(id -g) --network=host -v $WORKSPACE:/workspace \
                   ${DOCKER_IMAGE} \
-                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/ ${NODE_NAME} ${{ inputs.python-version }}"             
+                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/ ${NODE_NAME} ${{ inputs.python-version }} ${{ inputs.with-all-tests }}"             
           else
               echo "Launching configuration and build"
 
-              bash ${CI_DIR}/scripts/test.sh "${BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "${NODE_NAME}" "${{ inputs.python-version }}"
+              bash ${CI_DIR}/scripts/test.sh "${BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "${NODE_NAME}" "${{ inputs.python-version }}" "${{ inputs.with-all-tests }}"
           fi
           
 
