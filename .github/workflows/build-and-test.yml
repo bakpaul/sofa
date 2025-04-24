@@ -214,6 +214,7 @@ jobs:
           #Need more information. Might be good to
 
       - name: Build
+        id: build-step
         continue-on-error: true
         shell: bash
         run: |
@@ -312,7 +313,7 @@ jobs:
 
       - name: Launch tests
         continue-on-error: true
-        if: steps.Build.outcome == 'success'
+        if: steps.build-step.outcome == 'success'
         shell: bash
         run: |
           # If os has got docker then use it
@@ -332,7 +333,7 @@ jobs:
           
 
       - name: Publish artifacts
-        if: steps.Build.outcome == 'success' && inputs.generate-binaries == true
+        if: steps.build-step.outcome == 'success' && inputs.generate-binaries == true
         shell: bash
         run: |
           #TODO
