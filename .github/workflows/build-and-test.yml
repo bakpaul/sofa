@@ -324,7 +324,7 @@ jobs:
               docker run --rm \
                   --user $(id -u):$(id -g) --network=host -v $WORKSPACE:/workspace \
                   ${DOCKER_IMAGE} \
-                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/ ${NODE_NAME} ${{ inputs.python-version }} ${{ inputs.with-all-tests }}"             
+                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/scripts/ ${NODE_NAME} ${{ inputs.python-version }} ${{ inputs.with-all-tests }}"             
           else
               echo "Launching configuration and build"
 
