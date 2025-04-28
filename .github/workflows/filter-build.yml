@@ -1,4 +1,4 @@
-name: Trigger build and test
+name: Filter build action
 
 # ===============================================================
 # ===============================================================
@@ -45,6 +45,7 @@ on:
         - '["sh-macos_clang_release"]'
         - '["sh-ubuntu_gcc_release","sh-windows_vs2022_release","sh-macos_clang_release"]'
         default: '["sh-ubuntu_gcc_release","sh-windows_vs2022_release","sh-macos_clang_release"]'
+
 
 
   # Nightly build
@@ -143,7 +144,7 @@ jobs:
           echo 'BUILDER_OS=${{ github.event.inputs.os-matrix }}' >> $GITHUB_ENV
           echo "EXTERNAL_PLUGINS=$EXTERNAL_PLUGINS" >> $GITHUB_ENV
           echo "ADDITIONNAL_CMAKE_FLAGS=$ADDITIONNAL_CMAKE_FLAGS" >> $GITHUB_ENV
-          
+
 
       - name: Set up python
         uses: actions/setup-python@v5
