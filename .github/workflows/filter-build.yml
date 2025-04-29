@@ -330,7 +330,6 @@ jobs:
   call-workflow-passing-data:
     needs: filter_build
     uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
-    ```
     with:
       sofa-branch-name: ${{ needs.filter_build.outputs.SOFA_BRANCH_NAME }}
       sofa-commit-sha: ${{ needs.filter_build.outputs.SOFA_COMMIT_SHA }}
