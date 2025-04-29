@@ -141,7 +141,7 @@ jobs:
               fi
           else
               echo "This is not a PR: checking out sha ${{ inputs.sofa-commit-sha }} from branch ${{ inputs.sofa-branch-name }}"
-              git clone -b ${{ inputs.sofa-branch-name }} --single-branch https://www.github.com/bakpaul/sofa ## TODO : REMOVE THIS WITH SOFA_FRAMEWORK @@@@@@@@@@@@@
+              git clone -b ${{ inputs.sofa-branch-name }} --single-branch https://www.github.com/bakpaul/sofa ## TODO_before_PR_in_SOFA : REMOVE THIS WITH SOFA_FRAMEWORK @@@@@@@@@@@@@
               cd sofa
               git checkout ${{ inputs.sofa-commit-sha }}
           fi
@@ -149,7 +149,7 @@ jobs:
           cd $WORKSPACE
  
           ## Clone CI and use ci-depends-on structure
-          ### TODO: UNCOMMENT THIS WHEN PUSHIN TO REAL SOFA
+          ### TODO_before_PR_in_SOFA : UNCOMMENT THIS WHEN PUSHIN TO REAL SOFA
           # ci_branch=${{ inputs.sofa-branch-name }}
           # ci_repo_url="https://www.github.com/sofa-framework/ci"
           ### AND REMOVE THOSE
