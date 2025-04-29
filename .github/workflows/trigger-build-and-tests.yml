@@ -72,7 +72,8 @@ on:
 jobs:
   # Filter build handling : push in master, commits in PR, comments in PR and dispatch
   filter_build:
-    if: ${{ github.event_name != 'schedule'}}
+    if: ${{ github.event_name != 'schedule'}} #TODO_before_PR_in_SOFA - remove
+    ### if: ${{ github.repository_owner == 'sofa-framework' && github.event_name != 'schedule' }} #TODO_before_PR_in_SOFA - uncomment
     runs-on: ubuntu-latest
     outputs:
       SOFA_BRANCH_NAME: ${{ steps.export-vars.outputs.SOFA_BRANCH_NAME }}
@@ -197,7 +198,7 @@ jobs:
 
             pr_data=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
               -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/bakpaul/sofa/pulls/$PR_NUMBER")
+              "https://api.github.com/repos/bakpaul/sofa/pulls/$PR_NUMBER") #TODO_before_PR_in_SOFA - replace with sofa-framework
 
             # Extract data
             OWNER_NAME=$(echo "$pr_data" | jq -r '.user.login')
@@ -259,11 +260,11 @@ jobs:
   # Nightly build triggered once a day        
   nightly_build:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 2 * * *'
+    if: github.event.schedule == '0 2 * * *' #TODO_before_PR_in_SOFA - remove
+    ### if: ${{ github.repository_owner == 'sofa-framework' && github.event.schedule == '0 2 * * *' }} #TODO_before_PR_in_SOFA - uncomment
     strategy:
       matrix:
         sofa_version: [master, v24.12]
-    ### if: ${{ github.repository_owner == 'sofa-framework' }}
     outputs:
       SOFA_BRANCH_NAME: ${{ steps.export-vars.outputs.SOFA_BRANCH_NAME }}
       SOFA_COMMIT_SHA: ${{ steps.export-vars.outputs.SOFA_COMMIT_SHA }}
@@ -347,7 +348,8 @@ jobs:
   # Trigger the build and sharing all parameters from filter_build > outputs
   call-workflow-passing-data:
     needs: filter_build
-    uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
+    ### if: ${{ github.repository_owner == 'sofa-framework' }} #TODO_before_PR_in_SOFA - uncomment
+    uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master #TODO_before_PR_in_SOFA - replace with sofa-framework
     with:
       sofa-branch-name: ${{ needs.filter_build.outputs.SOFA_BRANCH_NAME }}
       sofa-commit-sha: ${{ needs.filter_build.outputs.SOFA_COMMIT_SHA }}
