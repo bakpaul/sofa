@@ -357,10 +357,10 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ steps.build-step.outcome }}" == "failure" ]]; then
-            echo "❌ Build step failed!"
+            echo "❌ Build step failed"
             exit 1
           elif [[ "${{ steps.launch-tests-step.outcome }}" == "failure" ]]; then
-            echo "❌ Launch tests step failed!"
+            echo "❌ Launch tests step failed"
             exit 1
           else
             echo "✅ Both build and test steps ran successfully."
