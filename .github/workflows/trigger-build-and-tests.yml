@@ -154,7 +154,7 @@ jobs:
         with:
           python-version: ${{ steps.export-python-version.outputs.PYTHON_VERSION }}
 
-          - name: Install pip packages
+      - name: Install pip packages
         run: |
           pip install python-graphql-client
           pip install requests
