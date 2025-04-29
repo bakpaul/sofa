@@ -363,4 +363,4 @@ jobs:
             echo "❌ Launch tests step failed!"
             exit 1
           else
-            echo "✅ All dependent steps passed."
+            echo "✅ Both build and test steps ran successfully."
