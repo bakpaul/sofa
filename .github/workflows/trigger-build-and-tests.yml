@@ -144,11 +144,15 @@ jobs:
           echo "EXTERNAL_PLUGINS=${{ inputs.external-plugins }}" >> $GITHUB_ENV
           echo "ADDITIONNAL_CMAKE_FLAGS=${{ inputs.additionnal-cmake-flags }}" >> $GITHUB_ENV
 
+      - name: Export python version
+        id: export-python-version
+        run: |
+          echo "PYTHON_VERSION=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Set up python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ steps.export-python-version.outputs.PYTHON_VERSION }}
 
       - name: Install pip packages
         run: |
@@ -282,6 +286,7 @@ jobs:
       
     steps:
       - name: Default values of environment variables
+        id: default-values
         run: |
           echo "SOFA_BRANCH_NAME=master" >> $GITHUB_ENV    # SOFA_BRANCH_NAME: "master"
           echo "SOFA_COMMIT_SHA=HEAD" >> $GITHUB_ENV       # SOFA_COMMIT_SHA: "HEAD"
@@ -297,11 +302,14 @@ jobs:
           echo "PR_BRANCH_NAME=" >> $GITHUB_ENV            # PR_BRANCH_NAME: ""
           echo "PR_COMMIT_SHA=HEAD" >> $GITHUB_ENV         # PR_COMMIT_SHA: "HEAD"
           echo 'BUILDER_OS=["sh-ubuntu_gcc_release"]' >> $GITHUB_ENV            # BUILDER_OS: ["sh-ubuntu_gcc_release"]
-          
+
+          # Save as output the Python version
+          echo "PYTHON_VERSION=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
+
       - name: Set up python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ steps.default-values.outputs.PYTHON_VERSION }}
 
       - name: Install pip packages
         run: |
@@ -337,7 +345,6 @@ jobs:
           echo "PR_BRANCH_NAME=${PR_BRANCH_NAME}" >> $GITHUB_OUTPUT
           echo "PR_COMMIT_SHA=${PR_COMMIT_SHA}" >> $GITHUB_OUTPUT
           echo "BUILDER_OS=${BUILDER_OS}" >> $GITHUB_OUTPUT
-
 
 
 
