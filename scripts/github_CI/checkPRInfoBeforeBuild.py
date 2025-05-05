@@ -22,7 +22,8 @@ if (not GITHUB_TOKEN) or (not PR_NUMBER) or (not OWNER_NAME) or (not PR_COMMIT_S
 
 
 # GitHub API base URL
-API_URL = f"https://api.github.com/repos/bakpaul/sofa"
+API_URL = f"https://api.github.com/repos/bakpaul/sofa" #TODO_before_PR_in_SOFA - replace with sofa-framework
+
 
 # Headers for authentication
 HEADERS = {
@@ -128,9 +129,7 @@ def export_pr_info():
         env_file.write(f"PR_OWNER_URL={pr_url}\n")
         env_file.write(f"PR_BRANCH_NAME={pr_branch_name}\n")
         env_file.write(f"PR_COMMIT_SHA={pr_commit_sha}\n")
-
-    ## TODO : pr_data.get('mergeable', False) could also let us know if it is mergeable
-
+        
 
 # ========================================================================
 
