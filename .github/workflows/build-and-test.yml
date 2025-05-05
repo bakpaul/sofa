@@ -342,7 +342,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
+          name: build-logs_${{ matrix.os }}
           path: |
             ${{ env.BUILD_DIR }}/make-output.txt
 
@@ -350,6 +350,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tests-logs
+          name: tests-logs_${{ matrix.os }}
           path: |
              ${{ env.BUILD_DIR }}/tests_results/
