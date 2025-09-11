@@ -29,6 +29,12 @@
 
 namespace sofa::component::constraint::lagrangian::solver
 {
+ImprovedJacobiConstraintSolver::ImprovedJacobiConstraintSolver()
+    : BuiltConstraintSolver()
+    , d_numberOfThread(initData(&d_numberOfThread, 1, "numberOfThread", "Number of thread to execute solver concurrently"))
+{
+
+}
 
 void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 {
@@ -101,59 +107,36 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     for(int i=0; i<current_cp->maxIterations; i++)
     {
         iterCount ++;
-        bool constraintsAreVerified = true;
-
-        error=0.0;
         SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
 
-        for(int j=0; j<dimension; ) // increment of j realized at the end of the loop
+
+        if (d_numberOfThread.getValue() == 1)
         {
-            // 1. nbLines provide the dimension of the constraint
-            const unsigned int nb = current_cp->constraintsResolutions[j]->getNbLines();
-
-            for(unsigned l=j; l<j+nb; ++l )
+            bool constraintsAreVerified;
+            std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(0, dimension,
+                                          dimension, rho, tol, beta,
+                                          d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), deltaF.data(), lastF.data(),
+                                          current_cp->constraintsResolutions );
+            if (current_cp->allVerified)
             {
-                for(unsigned k=0; k<dimension; ++k)
+                if (constraintsAreVerified)
                 {
-                    d[l] +=  w[l][k] * deltaF[k];
+                    convergence = true;
+                    break;
                 }
-                correctedD[l] = rho * d[l]  ;
             }
-            current_cp->constraintsResolutions[j]->resolution(j,w,correctedD.data(), force, dfree);
-            for(unsigned l=j; l<j+nb; ++l )
-            {
-                force[l] += beta * deltaF[l] ;
-                deltaF[l] = force[l] - lastF[l];
-                lastF[l] = force[l];
-            }
-
-            double cstError = 0.0;
-            for(unsigned l=j; l<j+nb; ++l )
-            {
-                for(unsigned k=0; k<dimension; ++k)
-                {
-                    cstError += pow(w[l][k] * deltaF[k],2);
-                }
-                constraintsAreVerified = constraintsAreVerified && cstError < pow(tol,2);
-            }
-            error += sqrt(cstError);
-            j+= nb;
-
-        }
-
-        if (current_cp->allVerified)
-        {
-            if (constraintsAreVerified)
+            else if(error < tol && i > 0) // do not stop at the first iteration (that is used for initial guess computation)
             {
                 convergence = true;
                 break;
             }
         }
-        else if(error < tol && i > 0) // do not stop at the first iteration (that is used for initial guess computation)
+        else
         {
-            convergence = true;
-            break;
+
         }
+
+
     }
 
     sofa::helper::AdvancedTimer::valSet("GS iterations", current_cp->currentIterations);
@@ -162,7 +145,52 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
 }
 
+std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegin, unsigned idEnd,
+                 unsigned dimension, SReal rho, SReal tol, SReal beta,
+                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* newDeltaF, SReal* newLastF,
+                 const SReal* deltaF, const SReal* lastF,
+                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr)
+{
 
+    bool constraintsAreVerified = true;
+    SReal error=0.0;
+
+    for(int j=idBegin; j<idEnd; ) // increment of j realized at the end of the loop
+    {
+        // 1. nbLines provide the dimension of the constraint
+        const unsigned int nb = constraintCorr[j]->getNbLines();
+
+        for(unsigned l=j; l<j+nb; ++l )
+        {
+            for(unsigned k=0; k<dimension; ++k)
+            {
+                d[l] +=  w[l][k] * deltaF[k];
+            }
+            correctedD[l] = rho * d[l]  ;
+        }
+        constraintCorr[j]->resolution(j,w,correctedD, force, dfree);
+        for(unsigned l=j; l<j+nb; ++l )
+        {
+            force[l] += beta * deltaF[l] ;
+            newDeltaF[l] = force[l] - lastF[l];
+            newLastF[l] = force[l];
+        }
+
+        double cstError = 0.0;
+        for(unsigned l=j; l<j+nb; ++l )
+        {
+            for(unsigned k=0; k<dimension; ++k)
+            {
+                cstError += pow(w[l][k] * deltaF[k],2);
+            }
+            constraintsAreVerified = constraintsAreVerified && cstError < pow(tol,2);
+        }
+        error += sqrt(cstError);
+        j+= nb;
+
+    }
+    return {constraintsAreVerified, error};
+}
 
 void registerImprovedJacobiConstraintSolver(sofa::core::ObjectFactory* factory)
 {
