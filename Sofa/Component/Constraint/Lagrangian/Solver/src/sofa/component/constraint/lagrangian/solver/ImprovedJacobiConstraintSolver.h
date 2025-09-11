@@ -30,7 +30,9 @@ class SOFA_COMPONENT_CONSTRAINT_LAGRANGIAN_SOLVER_API ImprovedJacobiConstraintSo
 {
 public:
     SOFA_CLASS(ImprovedJacobiConstraintSolver, BuiltConstraintSolver);
+    Data<int> d_numberOfThread;
 
+    ImprovedJacobiConstraintSolver();
 
     /**
      * Based on paper
@@ -39,5 +41,10 @@ public:
      **/
     virtual void doSolve( SReal timeout = 0.0) override;
 
+    static std::tuple<bool, SReal> iterate(unsigned idBegin, unsigned idEnd,
+                 unsigned dimension, SReal rho, SReal tol, SReal beta,
+                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* newDeltaF, SReal* newLastF,
+                 const SReal* deltaF, const SReal* lastF,
+                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 };
 }
