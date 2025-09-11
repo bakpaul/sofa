@@ -34,6 +34,30 @@ public:
 
     ImprovedJacobiConstraintSolver();
 
+    class AsynchSubSolver
+    {
+    public:
+        AsynchSubSolver(unsigned idBegin, unsigned idEnd,
+                 unsigned dimension, SReal rho, SReal tol,
+                 SReal *d, SReal** w, SReal* force, SReal** deltaF, SReal** lastF,
+                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
+
+
+
+        unsigned m_idBegin;
+        unsigned m_idEnd;
+        unsigned m_dimension;
+        SReal    m_rho;
+        SReal    m_tol;
+        SReal*   m_d;
+        SReal*   m_force;
+        SReal**  m_w;
+        SReal**  m_deltaF;
+        SReal**  m_lastF;
+        std::vector<core::behavior::ConstraintResolution*>& m_constraintCorr;
+
+    };
+
     /**
      * Based on paper
      * Francu, Mihai & Moldoveanu, Florica. An Improved Jacobi Solver for Particle Simulation.
