@@ -23,6 +23,7 @@
 
 #include <sofa/component/constraint/lagrangian/solver/BuiltConstraintSolver.h>
 #include <sofa/core/behavior/ConstraintResolution.h>
+#include <thread>
 
 namespace sofa::component::constraint::lagrangian::solver
 {
@@ -42,7 +43,10 @@ public:
                  SReal *d, SReal** w, SReal* force, SReal** deltaF, SReal** lastF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
+        AsynchSubSolver(const AsynchSubSolver& from);
+        ~AsynchSubSolver();
 
+        AsynchSubSolver& operator =(const AsynchSubSolver& from);
 
         unsigned m_idBegin;
         unsigned m_idEnd;
@@ -56,6 +60,7 @@ public:
         SReal**  m_lastF;
         std::vector<core::behavior::ConstraintResolution*>& m_constraintCorr;
 
+        std::thread m_thread;
     };
 
     /**

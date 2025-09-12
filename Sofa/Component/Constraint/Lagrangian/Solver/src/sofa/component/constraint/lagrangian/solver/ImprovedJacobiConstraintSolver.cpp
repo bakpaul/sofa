@@ -29,6 +29,18 @@
 
 namespace sofa::component::constraint::lagrangian::solver
 {
+
+ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegin, unsigned idEnd,
+                 unsigned dimension, SReal rho, SReal tol,
+                 SReal *d, SReal** w, SReal* force, SReal** deltaF, SReal** lastF,
+                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr)
+                 : m_idBegin(idBegin)
+                 , m_idEnd(idBegin)
+{
+
+}
+
+
 ImprovedJacobiConstraintSolver::ImprovedJacobiConstraintSolver()
     : BuiltConstraintSolver()
     , d_numberOfThread(initData(&d_numberOfThread, 1, "numberOfThread", "Number of thread to execute solver concurrently"))
@@ -103,6 +115,13 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         eigenRadius=std::max(eigenRadius,norm(s));
     }
     const SReal rho = std::min(1.0, 0.9 * 2/eigenRadius);
+
+    std::vector<AsynchSubSolver> asynchSolvers;
+    //Setup and distribute constraints ids among threads
+    if (d_numberOfThread.getValue() > 1)
+    {
+
+    }
 
     for(int i=0; i<current_cp->maxIterations; i++)
     {
