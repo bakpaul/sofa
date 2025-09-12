@@ -40,8 +40,8 @@ public:
     public:
         AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
-                 SReal *d, SReal** w, SReal* force, SReal** deltaF, SReal** lastF,
-                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
+                 SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr);
 
         AsynchSubSolver(const AsynchSubSolver& from);
         ~AsynchSubSolver();
@@ -54,11 +54,13 @@ public:
         SReal    m_rho;
         SReal    m_tol;
         SReal*   m_d;
-        SReal*   m_force;
+        SReal*   m_correctedD;
+        SReal*   m_dfree;
         SReal**  m_w;
-        SReal**  m_deltaF;
-        SReal**  m_lastF;
-        std::vector<core::behavior::ConstraintResolution*>& m_constraintCorr;
+        SReal*   m_force;
+        SReal*  m_deltaF;
+        SReal*  m_lastF;
+        std::vector<core::behavior::ConstraintResolution*>* m_constraintCorr;
 
         std::thread m_thread;
     };

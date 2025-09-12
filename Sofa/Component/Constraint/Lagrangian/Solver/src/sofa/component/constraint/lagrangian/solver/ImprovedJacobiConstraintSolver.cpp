@@ -32,12 +32,62 @@ namespace sofa::component::constraint::lagrangian::solver
 
 ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
-                 SReal *d, SReal** w, SReal* force, SReal** deltaF, SReal** lastF,
-                 std::vector<core::behavior::ConstraintResolution*>& constraintCorr)
-                 : m_idBegin(idBegin)
-                 , m_idEnd(idBegin)
+                 SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr)
+: m_idBegin(idBegin)
+, m_idEnd(idEnd)
+, m_dimension(dimension)
+, m_rho(rho)
+, m_tol(tol)
+, m_d(d)
+, m_correctedD(correctedD)
+, m_dfree(dfree)
+, m_w(w)
+, m_force(force)
+, m_deltaF(deltaF)
+, m_lastF(lastF)
+, m_constraintCorr(constraintCorr)
 {
 
+}
+
+ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(const AsynchSubSolver & from)
+: m_idBegin(from.m_idBegin)
+, m_idEnd(from.m_idEnd)
+, m_dimension(from.m_dimension)
+, m_rho(from.m_rho)
+, m_tol(from.m_tol)
+, m_d(from.m_d)
+, m_correctedD(from.m_correctedD)
+, m_dfree(from.m_dfree)
+, m_w(from.m_w)
+, m_force(from.m_force)
+, m_deltaF(from.m_deltaF)
+, m_lastF(from.m_lastF)
+, m_constraintCorr(from.m_constraintCorr)
+{}
+
+ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver::AsynchSubSolver::operator=(const AsynchSubSolver & from)
+{
+    m_idBegin = from.m_idBegin;
+    m_idEnd = from.m_idEnd;
+    m_dimension = from.m_dimension;
+    m_rho = from.m_rho;
+    m_tol = from.m_tol;
+    m_d = from.m_d;
+    m_correctedD = from.m_correctedD;
+    m_dfree = from.m_dfree;
+    m_w = from.m_w;
+    m_force = from.m_force;
+    m_deltaF = from.m_deltaF;
+    m_lastF = from.m_lastF;
+    m_constraintCorr = from.m_constraintCorr;
+}
+
+ImprovedJacobiConstraintSolver::AsynchSubSolver::~AsynchSubSolver()
+{
+    if (m_thread.joinable())
+        m_thread.join();
 }
 
 
@@ -75,11 +125,11 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         force[i] = 0;
     }
 
+    // The size of those buffer depend on the number of thread that are used.
+    // If only one thread is used then the vector is of size dimension
+    // Else it is of twice the dimensions, to allow the use of a switching buffer mechanism
     std::vector<SReal> lastF;
-    lastF.resize(current_cp->getDimension(), 0.0);
-
     std::vector<SReal> deltaF;
-    deltaF.resize(current_cp->getDimension(), 0.0);
 
     std::vector<SReal> correctedD;
     correctedD.resize(current_cp->getDimension(), 0.0);
@@ -118,7 +168,50 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
     std::vector<AsynchSubSolver> asynchSolvers;
     //Setup and distribute constraints ids among threads
-    if (d_numberOfThread.getValue() > 1)
+    unsigned usedthreads = std::min(d_numberOfThread.getValue(),(int) current_cp->constraintsResolutions.size()) ;
+    if (usedthreads == 1)
+    {
+        lastF.resize(current_cp->getDimension(),0.0);
+        deltaF.resize(current_cp->getDimension(),0.0);
+    }
+    else
+    {
+        //Allocate twice the number of dimension to enable buffer changing mechanism to avoid concurrency
+        lastF.resize(2*current_cp->getDimension(),0.0);
+        deltaF.resize(2*current_cp->getDimension(),0.0);
+
+        unsigned beginId = 0;
+        unsigned endId = 0;
+        unsigned cstId = 0;
+        //Define how many thread to use
+        for (unsigned j=0; j<usedthreads && cstId < current_cp->constraintsResolutions.size(); ++j)
+        {
+            if (j == usedthreads - 1)
+            {
+                endId = dimension;
+            }
+            else
+            {
+                while ((endId - beginId)<(dimension/usedthreads) && (cstId < current_cp->constraintsResolutions.size()) )
+                {
+                    endId += current_cp->constraintsResolutions[cstId]->getNbLines();
+                    ++cstId;
+                }
+            }
+
+            asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions));
+            beginId = endId;
+            //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
+            // Or worse, when whe have nbThread=3, dimension = 3 but only one constraint resolution exists.
+            // For now on, the number of thread is actually asynchSolvers.size().
+        }
+        usedthreads = asynchSolvers.size();
+        if (usedthreads == 1)
+            asynchSolvers.clear();
+    }
+
+    //Thread initialization
+    if (usedthreads > 1)
     {
 
     }
@@ -129,7 +222,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
 
 
-        if (d_numberOfThread.getValue() == 1)
+        if (usedthreads == 1)
         {
             bool constraintsAreVerified;
             std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(0, dimension,
@@ -154,13 +247,12 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         {
 
         }
-
-
     }
 
     sofa::helper::AdvancedTimer::valSet("GS iterations", current_cp->currentIterations);
 
     current_cp->result_output(this, force, error, iterCount, convergence);
+
 
 }
 
