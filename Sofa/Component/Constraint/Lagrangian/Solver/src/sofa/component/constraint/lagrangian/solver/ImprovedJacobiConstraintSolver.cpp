@@ -33,7 +33,7 @@ namespace sofa::component::constraint::lagrangian::solver
 ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
                  SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
-                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr)
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, ImprovedJacobiConstraintSolver * solver)
 : m_idBegin(idBegin)
 , m_idEnd(idEnd)
 , m_dimension(dimension)
@@ -47,6 +47,9 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegi
 , m_deltaF(deltaF)
 , m_lastF(lastF)
 , m_constraintCorr(constraintCorr)
+, m_solver(solver)
+, m_thread(nullptr)
+, m_bufferId(0)
 {
 
 }
@@ -65,6 +68,9 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(const AsynchSub
 , m_deltaF(from.m_deltaF)
 , m_lastF(from.m_lastF)
 , m_constraintCorr(from.m_constraintCorr)
+, m_solver(from.m_solver)
+, m_thread(nullptr)
+, m_bufferId(0)
 {}
 
 ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver::AsynchSubSolver::operator=(const AsynchSubSolver & from)
@@ -82,12 +88,42 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver
     m_deltaF = from.m_deltaF;
     m_lastF = from.m_lastF;
     m_constraintCorr = from.m_constraintCorr;
+    m_solver = from.m_solver;
+    m_thread = from.m_thread;
+    m_bufferId = from.m_bufferId;
 }
 
 ImprovedJacobiConstraintSolver::AsynchSubSolver::~AsynchSubSolver()
 {
-    if (m_thread.joinable())
-        m_thread.join();
+    if(!m_thread)
+        return;
+
+    if (m_thread->joinable())
+        m_thread->join();
+
+    delete m_thread;
+    m_thread = nullptr;
+}
+
+void ImprovedJacobiConstraintSolver::AsynchSubSolver::startThread(std::shared_future<void> startFuture)
+{
+    this->m_thread = new std::thread(std::bind(&ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop, this, startFuture));
+}
+
+void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop(std::shared_future<void> startFuture)
+{
+    startFuture.wait();
+    bool iterate = true;
+
+    while(iterate)
+    {
+        //DoStuff
+
+        std::atomic_fetch_add(&m_solver->m_workerCounter,1 );
+        //Thread is blocked here
+        std::tie<bool, unsigned>(iterate, m_bufferId) = m_continueFuture.get();
+    }
+
 }
 
 
@@ -199,21 +235,28 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                 }
             }
 
-            asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions));
+            asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
             // Or worse, when whe have nbThread=3, dimension = 3 but only one constraint resolution exists.
             // For now on, the number of thread is actually asynchSolvers.size().
         }
         usedthreads = asynchSolvers.size();
+        //If we have only one thread, let's stay on the main one
         if (usedthreads == 1)
             asynchSolvers.clear();
     }
 
+
+    std::promise<void> startPromise;
+    std::shared_future<void> startFuture(startPromise.get_future());
     //Thread initialization
     if (usedthreads > 1)
     {
-
+        for(unsigned i=1; i< usedthreads; ++i)
+        {
+            asynchSolvers[i].startThread(startFuture);
+        }
     }
 
     for(int i=0; i<current_cp->maxIterations; i++)
@@ -245,6 +288,14 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         }
         else
         {
+            if(i==0) //First run
+                startPromise.set_value();
+
+            //do stuff
+            while(m_workerCounter.load() < usedthreads-1)
+                std::this_thread::sleep_for(std::chrono::duration<double,std::micro>(10));
+
+            //do all checks
 
         }
     }

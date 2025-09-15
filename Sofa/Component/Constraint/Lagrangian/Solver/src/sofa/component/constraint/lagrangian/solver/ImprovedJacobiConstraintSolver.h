@@ -24,6 +24,8 @@
 #include <sofa/component/constraint/lagrangian/solver/BuiltConstraintSolver.h>
 #include <sofa/core/behavior/ConstraintResolution.h>
 #include <thread>
+#include <future>
+#include <atomic>
 
 namespace sofa::component::constraint::lagrangian::solver
 {
@@ -41,16 +43,26 @@ public:
         AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
                  SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
-                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr);
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, ImprovedJacobiConstraintSolver * solver);
 
         AsynchSubSolver(const AsynchSubSolver& from);
         ~AsynchSubSolver();
 
         AsynchSubSolver& operator =(const AsynchSubSolver& from);
 
+
+        void mainLoop(std::shared_future<void> startFuture);
+
+        void setContinueFuture(std::shared_future<bool> continueFuture);
+
+        void startThread(std::shared_future<void> startFuture);
+
+       private:
+
         unsigned m_idBegin;
         unsigned m_idEnd;
         unsigned m_dimension;
+        unsigned m_bufferId;
         SReal    m_rho;
         SReal    m_tol;
         SReal*   m_d;
@@ -61,8 +73,13 @@ public:
         SReal*  m_deltaF;
         SReal*  m_lastF;
         std::vector<core::behavior::ConstraintResolution*>* m_constraintCorr;
+        ImprovedJacobiConstraintSolver * m_solver;
 
-        std::thread m_thread;
+        std::thread * m_thread;
+
+        std::shared_future< std::tuple<bool, unsigned> > m_continueFuture;
+
+
     };
 
     /**
@@ -77,5 +94,7 @@ public:
                  SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* newDeltaF, SReal* newLastF,
                  const SReal* deltaF, const SReal* lastF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
+
+    std::atomic_int m_workerCounter;
 };
 }
