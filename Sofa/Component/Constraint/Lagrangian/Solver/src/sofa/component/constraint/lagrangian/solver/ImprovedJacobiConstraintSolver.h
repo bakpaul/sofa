@@ -39,6 +39,7 @@ public:
 
     class AsynchSubSolver
     {
+        friend ImprovedJacobiConstraintSolver;
     public:
         AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
@@ -51,18 +52,18 @@ public:
         AsynchSubSolver& operator =(const AsynchSubSolver& from);
 
 
-        void mainLoop(std::shared_future<void> startFuture);
+        void mainLoop();
 
-        void setContinueFuture(std::shared_future<bool> continueFuture);
+        void startThread();
 
-        void startThread(std::shared_future<void> startFuture);
+        bool m_allVerified;
+        SReal m_currError;
 
-       private:
+       protected:
 
         unsigned m_idBegin;
         unsigned m_idEnd;
         unsigned m_dimension;
-        unsigned m_bufferId;
         SReal    m_rho;
         SReal    m_tol;
         SReal*   m_d;
@@ -73,11 +74,10 @@ public:
         SReal*  m_deltaF;
         SReal*  m_lastF;
         std::vector<core::behavior::ConstraintResolution*>* m_constraintCorr;
+
         ImprovedJacobiConstraintSolver * m_solver;
 
         std::thread * m_thread;
-
-        std::shared_future< std::tuple<bool, unsigned> > m_continueFuture;
 
 
     };
@@ -95,6 +95,16 @@ public:
                  const SReal* deltaF, const SReal* lastF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
+
+    std::shared_future<std::tuple<bool, SReal>> getCurrentFuture()
+    {
+        return m_futures[m_bufferNumber.load()];
+    }
+
+    std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
+    std::array<std::shared_future<std::tuple<bool, SReal>>, 2> m_futures;
+
+    std::atomic_int m_bufferNumber;
     std::atomic_int m_workerCounter;
 };
 }
