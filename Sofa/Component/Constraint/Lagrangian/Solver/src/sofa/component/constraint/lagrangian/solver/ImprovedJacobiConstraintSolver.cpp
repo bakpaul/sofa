@@ -71,8 +71,8 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(const AsynchSub
 , m_constraintCorr(from.m_constraintCorr)
 , m_solver(from.m_solver)
 , m_thread(nullptr)
-, m_allVerified(from.m_allVerified)
-, m_currError(from.m_currError)
+, m_allVerified(from.m_allVerified.load())
+, m_currError(from.m_currError.load())
 {}
 
 ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver::AsynchSubSolver::operator=(const AsynchSubSolver & from)
@@ -92,8 +92,8 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver
     m_constraintCorr = from.m_constraintCorr;
     m_solver = from.m_solver;
     m_thread = from.m_thread;
-    m_allVerified = from.m_allVerified;
-    m_currError = from.m_currError;
+    m_allVerified.store(from.m_allVerified.load());
+    m_currError.store(from.m_currError.load());
 }
 
 ImprovedJacobiConstraintSolver::AsynchSubSolver::~AsynchSubSolver()
@@ -128,10 +128,13 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
         if( ! iterate)
             break;
         const int currBuffer = m_solver->m_bufferNumber.load();
-        ImprovedJacobiConstraintSolver::iterate(m_idBegin, m_idEnd, m_dimension,
+        std::tuple<bool, SReal> ret  = ImprovedJacobiConstraintSolver::iterate(m_idBegin, m_idEnd, m_dimension,
                                                 m_rho, m_tol, beta, m_d, m_correctedD, m_dfree, m_w, m_force,
                                                 &m_deltaF[m_dimension*(currBuffer)],&m_lastF[m_dimension*(currBuffer)], &m_deltaF[m_dimension*((currBuffer+1)%2)],&m_lastF[m_dimension*((currBuffer+1)%2)],
                                                 *m_constraintCorr);
+        m_currError.store(std::get<1>(ret));
+        m_allVerified.store(std::get<0>(ret));
+        std::cout<<"Local error: "<<m_currError<<std::endl;
         std::atomic_fetch_add(&m_solver->m_workerCounter,1 );
     }
 
@@ -231,6 +234,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         unsigned beginId = 0;
         unsigned endId = 0;
         //Define how many thread to use
+        std::cout<<"Dimensions : "<<dimension   <<std::endl;
+
         for (unsigned j=0; j<usedthreads && endId < current_cp->constraintsResolutions.size(); ++j)
         {
             if (j == usedthreads - 1)
@@ -244,6 +249,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                     endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
+            std::cout<<"Ids : "<<beginId<<", "<<endId<<std::endl;
             asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
@@ -255,35 +261,31 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         //If we have only one thread, let's stay on the main one
         if (usedthreads == 1)
             asynchSolvers.clear();
-    }
-
-    //Thread initialization
-    if (usedthreads > 1)
-    {
-        m_bufferNumber.store(0);
-        m_promises[0] = std::promise<std::tuple<bool, SReal>>();
-        m_promises[1] = std::promise<std::tuple<bool, SReal>>();
-        std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_promises[0].get_future());
-        std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_promises[1].get_future());
-
-        m_workerCounter.store(0);
-        for(unsigned i=1; i< usedthreads; ++i)
+        else
         {
-            asynchSolvers[i].m_futures[0] = sharedFuture0;
-            asynchSolvers[i].m_futures[1] = sharedFuture1;
-            asynchSolvers[i].startThread();
+            m_bufferNumber.store(0);
+            m_promises[0] = std::promise<std::tuple<bool, SReal>>();
+            m_promises[1] = std::promise<std::tuple<bool, SReal>>();
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_promises[0].get_future());
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_promises[1].get_future());
+
+            m_workerCounter.store(0);
+            for(unsigned i=1; i< usedthreads; ++i)
+            {
+                asynchSolvers[i].m_futures[0] = sharedFuture0;
+                asynchSolvers[i].m_futures[1] = sharedFuture1;
+                asynchSolvers[i].startThread();
+            }
         }
     }
 
-    std::cout<<"start algorithm"<<std::endl;
     for(int i=0; i<current_cp->maxIterations; i++)
     {
         iterCount ++;
+        const SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
 
         if (usedthreads == 1)
         {
-            SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
-
             bool constraintsAreVerified;
             std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(0, dimension,
                                           dimension, rho, tol, beta,
@@ -305,12 +307,11 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         }
         else
         {
-            const SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
-
             if(i==0) //First run
             {
                 while(m_workerCounter.load() < usedthreads-1)
-                    std::this_thread::sleep_for(std::chrono::duration<double,std::micro>(10)); //TODO is there a better way ?
+                    std::this_thread::sleep_for(std::chrono::microseconds(10)); //TODO is there a better way ?
+                m_workerCounter.store(0);
 
                 m_bufferNumber.store(1);
                 m_promises[0].set_value({true, beta});
@@ -318,30 +319,32 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
             else
             {
                 m_promises[(m_bufferNumber.load()+1)%2].set_value({true,beta });
-
             }
 
-            ImprovedJacobiConstraintSolver::iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
+            bool constraintsAreVerified = true;
+            std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
                                                     rho, tol, beta, d, correctedD.data(), dfree, w, force,
                                                     &deltaF[dimension*(m_bufferNumber.load())],&lastF[dimension*(m_bufferNumber.load())], &deltaF[dimension*((m_bufferNumber.load()+1)%2)],&lastF[dimension*((m_bufferNumber.load()+1)%2)],
                                                     current_cp->constraintsResolutions);
 
             while(m_workerCounter.load() < usedthreads-1)
-                std::this_thread::sleep_for(std::chrono::duration<double,std::micro>(10)); //TODO is there a better way ?
+                std::this_thread::sleep_for(std::chrono::microseconds(10)); //TODO is there a better way ?
+            m_workerCounter.store(0);
 
-            bool constraintsAreVerified = true;
-            error = 0;
+
 
             m_bufferNumber.store((m_bufferNumber.load() + 1)%2);
             m_promises[m_bufferNumber.load()] = std::promise<std::tuple<bool, SReal>>();
             std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_promises[m_bufferNumber.load()].get_future());
             for(auto & solver : asynchSolvers)
             {
-                error += solver.m_currError;
-                constraintsAreVerified &= solver.m_allVerified;
+                std::cout<<"Intermediate error : "<<error<<std::endl;
+
+                error += solver.m_currError.load();
+                constraintsAreVerified &= solver.m_allVerified.load();
                 solver.m_futures[m_bufferNumber.load()] = sharedFuture;
             }
-
+            std::cout<<"Current error : "<<error<<std::endl;
             if (current_cp->allVerified)
             {
                 if (constraintsAreVerified)
