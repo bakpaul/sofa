@@ -124,7 +124,7 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
     std::cout<<m_solver->m_workerCounter.load()<<" th thread ready ! "<<std::endl;
     while(true)
     {
-        std::tie( iterate, beta) = m_solver->getCurrentFuture().get();
+        std::tie( iterate, beta) = getCurrentFuture().get();
         if( ! iterate)
             break;
         const int currBuffer = m_solver->m_bufferNumber.load();
@@ -223,15 +223,15 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     }
     else
     {
+        asynchSolvers.reserve(usedthreads);
         //Allocate twice the number of dimension to enable buffer changing mechanism to avoid concurrency
         lastF.resize(2*current_cp->getDimension(),0.0);
         deltaF.resize(2*current_cp->getDimension(),0.0);
 
         unsigned beginId = 0;
         unsigned endId = 0;
-        unsigned cstId = 0;
         //Define how many thread to use
-        for (unsigned j=0; j<usedthreads && cstId < current_cp->constraintsResolutions.size(); ++j)
+        for (unsigned j=0; j<usedthreads && endId < current_cp->constraintsResolutions.size(); ++j)
         {
             if (j == usedthreads - 1)
             {
@@ -239,13 +239,11 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
             }
             else
             {
-                while ((endId - beginId)<(dimension/usedthreads) && (cstId < current_cp->constraintsResolutions.size()) )
+                while ((endId - beginId)<(dimension/usedthreads) && (endId < current_cp->constraintsResolutions.size()) )
                 {
-                    endId += current_cp->constraintsResolutions[cstId]->getNbLines();
-                    ++cstId;
+                    endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
-
             asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
@@ -253,6 +251,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
             // For now on, the number of thread is actually asynchSolvers.size().
         }
         usedthreads = asynchSolvers.size();
+
         //If we have only one thread, let's stay on the main one
         if (usedthreads == 1)
             asynchSolvers.clear();
@@ -261,21 +260,22 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     //Thread initialization
     if (usedthreads > 1)
     {
-
-
         m_bufferNumber.store(0);
         m_promises[0] = std::promise<std::tuple<bool, SReal>>();
-        m_futures [0]  = std::shared_future<std::tuple<bool, SReal>>(m_promises[0].get_future());
         m_promises[1] = std::promise<std::tuple<bool, SReal>>();
-        m_futures [1]  = std::shared_future<std::tuple<bool, SReal>>(m_promises[1].get_future());
+        std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_promises[0].get_future());
+        std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_promises[1].get_future());
 
         m_workerCounter.store(0);
         for(unsigned i=1; i< usedthreads; ++i)
         {
+            asynchSolvers[i].m_futures[0] = sharedFuture0;
+            asynchSolvers[i].m_futures[1] = sharedFuture1;
             asynchSolvers[i].startThread();
         }
     }
 
+    std::cout<<"start algorithm"<<std::endl;
     for(int i=0; i<current_cp->maxIterations; i++)
     {
         iterCount ++;
@@ -314,7 +314,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
                 m_bufferNumber.store(1);
                 m_promises[0].set_value({true, beta});
-
             }
             else
             {
@@ -333,14 +332,14 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
             bool constraintsAreVerified = true;
             error = 0;
 
-
+            m_bufferNumber.store((m_bufferNumber.load() + 1)%2);
+            m_promises[m_bufferNumber.load()] = std::promise<std::tuple<bool, SReal>>();
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_promises[m_bufferNumber.load()].get_future());
             for(auto & solver : asynchSolvers)
             {
                 error += solver.m_currError;
                 constraintsAreVerified &= solver.m_allVerified;
-                m_bufferNumber.store((m_bufferNumber.load() + 1)%2);
-                m_promises[m_bufferNumber.load()] = std::promise<std::tuple<bool, SReal>>();
-                m_futures[m_bufferNumber.load()] = std::shared_future<std::tuple<bool, SReal>>(m_promises[m_bufferNumber.load()].get_future());
+                solver.m_futures[m_bufferNumber.load()] = sharedFuture;
             }
 
             if (current_cp->allVerified)
