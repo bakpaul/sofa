@@ -59,6 +59,15 @@ public:
         bool m_allVerified;
         SReal m_currError;
 
+
+
+        std::shared_future<std::tuple<bool, SReal>> getCurrentFuture()
+        {
+            return m_futures[m_solver->m_bufferNumber.load()];
+        }
+
+        std::array<std::shared_future<std::tuple<bool, SReal>>, 2> m_futures;
+
        protected:
 
         unsigned m_idBegin;
@@ -95,14 +104,7 @@ public:
                  const SReal* deltaF, const SReal* lastF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
-
-    std::shared_future<std::tuple<bool, SReal>> getCurrentFuture()
-    {
-        return m_futures[m_bufferNumber.load()];
-    }
-
     std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
-    std::array<std::shared_future<std::tuple<bool, SReal>>, 2> m_futures;
 
     std::atomic_int m_bufferNumber;
     std::atomic_int m_workerCounter;
