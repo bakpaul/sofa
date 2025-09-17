@@ -56,8 +56,8 @@ public:
 
         void startThread();
 
-        bool m_allVerified;
-        SReal m_currError;
+        std::atomic_bool m_allVerified;
+        std::atomic<SReal> m_currError;
 
 
 
