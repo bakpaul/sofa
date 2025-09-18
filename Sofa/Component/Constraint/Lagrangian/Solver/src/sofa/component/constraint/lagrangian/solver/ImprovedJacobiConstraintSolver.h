@@ -33,7 +33,8 @@ class SOFA_COMPONENT_CONSTRAINT_LAGRANGIAN_SOLVER_API ImprovedJacobiConstraintSo
 {
 public:
     SOFA_CLASS(ImprovedJacobiConstraintSolver, BuiltConstraintSolver);
-    Data<int> d_numberOfThread;
+    Data<int> d_maximumNumberOfThread;
+    Data<int> d_minimumNumberOfLinePerThread;
 
     ImprovedJacobiConstraintSolver();
 
@@ -56,8 +57,8 @@ public:
 
         void startThread();
 
-        std::atomic_bool m_allVerified;
-        std::atomic<SReal> m_currError;
+        bool m_allVerified;
+        SReal m_currError;
 
 
 
@@ -67,7 +68,7 @@ public:
         }
 
         std::array<std::shared_future<std::tuple<bool, SReal>>, 2> m_futures;
-
+        std::mutex m_accessMutex;
        protected:
 
         unsigned m_idBegin;
