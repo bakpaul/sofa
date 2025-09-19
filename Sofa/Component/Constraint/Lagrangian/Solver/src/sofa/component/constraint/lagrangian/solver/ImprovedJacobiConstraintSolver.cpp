@@ -130,7 +130,8 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
         const int currBuffer = m_solver->m_bufferNumber.load();
         std::tie(m_allVerified, m_currError) = ImprovedJacobiConstraintSolver::iterate(m_idBegin, m_idEnd, m_dimension,
                                                 m_rho, m_tol, beta, m_d, m_correctedD, m_dfree, m_w, m_force,
-                                                &m_deltaF[m_dimension*(currBuffer)],&m_lastF[m_dimension*(currBuffer)], &m_deltaF[m_dimension*((currBuffer+1)%2)],&m_lastF[m_dimension*((currBuffer+1)%2)],
+                                                m_deltaF + m_dimension*(currBuffer),m_lastF + m_dimension*(currBuffer),
+                                                m_deltaF + m_dimension*((currBuffer+1)%2), m_lastF + m_dimension*((currBuffer+1)%2),
                                                 *m_constraintCorr);
 
     }
@@ -174,7 +175,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
     for(unsigned i=0; i< dimension; ++i)
     {
-        force[i] = 0;
+        force[i] = 0.0;
     }
 
     // The size of those buffer depend on the number of thread that are used.
@@ -251,6 +252,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         unsigned beginId = 0;
         unsigned endId = 0;
         //Define how many thread to use
+        std::cout<<"Dimension "<<dimension<<std::endl;
+
         for (unsigned j=0; j<usedthreads && endId < current_cp->constraintsResolutions.size(); ++j)
         {
             if (j == usedthreads - 1)
@@ -264,6 +267,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                     endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
+            std::cout<<"Builder "<<j<<" : "<<beginId<< ", "<<endId<<std::endl;
             asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
@@ -301,7 +305,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
         if (usedthreads == 1)
         {
-            std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(0, dimension,
+            std::tie(constraintsAreVerified, error) = iterate(0, dimension,
                                           dimension, rho, tol, beta,
                                           d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), deltaF.data(), lastF.data(),
                                           current_cp->constraintsResolutions );
@@ -321,6 +325,9 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         }
         else
         {
+
+
+
             if(i==0) //First run
             {
                 while(m_workerCounter.load() < usedthreads-1)
@@ -337,7 +344,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
             std::tie(constraintsAreVerified, error) = iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
                                                     rho, tol, beta, d, correctedD.data(), dfree, w, force,
-                                                    &deltaF[dimension*(m_bufferNumber.load())],&lastF[dimension*(m_bufferNumber.load())], &deltaF[dimension*((m_bufferNumber.load()+1)%2)],&lastF[dimension*((m_bufferNumber.load()+1)%2)],
+                                                    deltaF.data() + dimension*(m_bufferNumber.load()),lastF.data() + dimension*(m_bufferNumber.load()),
+                                                    deltaF.data() + dimension*((m_bufferNumber.load()+1)%2),lastF.data() + dimension*((m_bufferNumber.load()+1)%2),
                                                     current_cp->constraintsResolutions);
 
 
@@ -377,6 +385,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         {
             graph_residuals->push_back(error);
         }
+        std::cout<<"error ("<<i<<"): "<<error<<std::endl;
+
     }
 
     sofa::helper::AdvancedTimer::valSet("GS iterations", current_cp->currentIterations);
@@ -396,7 +406,7 @@ std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegi
     bool constraintsAreVerified = true;
     SReal error=0.0;
 
-    for(int j=idBegin; j<idEnd; ) // increment of j realized at the end of the loop
+    for(unsigned j=idBegin; j<idEnd; ) // increment of j realized at the end of the loop
     {
         // 1. nbLines provide the dimension of the constraint
         const unsigned int nb = constraintCorr[j]->getNbLines();
