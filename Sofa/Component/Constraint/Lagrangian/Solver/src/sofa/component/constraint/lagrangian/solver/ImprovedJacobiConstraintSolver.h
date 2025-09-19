@@ -35,6 +35,10 @@ public:
     SOFA_CLASS(ImprovedJacobiConstraintSolver, BuiltConstraintSolver);
     Data<int> d_maximumNumberOfThread;
     Data<int> d_minimumNumberOfLinePerThread;
+    Data<bool>  d_useSpectralCorrection;
+    Data<SReal> d_spectralCorrectionFactor;
+    Data<bool>  d_useConjugateResidue;
+    Data<SReal> d_conjugateResidueSpeedFactor;
 
     ImprovedJacobiConstraintSolver();
 

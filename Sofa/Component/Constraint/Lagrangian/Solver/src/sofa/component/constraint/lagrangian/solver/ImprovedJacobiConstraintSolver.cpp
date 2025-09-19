@@ -142,6 +142,10 @@ ImprovedJacobiConstraintSolver::ImprovedJacobiConstraintSolver()
     : BuiltConstraintSolver()
     , d_maximumNumberOfThread(initData(&d_maximumNumberOfThread, 1, "maximumNumberOfThread", "Number of thread to execute solver concurrently"))
     , d_minimumNumberOfLinePerThread(initData(&d_minimumNumberOfLinePerThread, 1, "minimumNumberOfLinePerThread", "Number of thread to execute solver concurrently"))
+    , d_useSpectralCorrection(initData(&d_useSpectralCorrection,false,"useSpectralCorrection","If set to true, the solution found after each iteration will be multiplied by spectralCorrectionFactor*2/spr(W), with spr() denoting the spectral radius."))
+    , d_spectralCorrectionFactor(initData(&d_spectralCorrectionFactor,1.0,"spectralCorrectionFactor","Factor used to modulate the spectral correction"))
+    , d_useConjugateResidue(initData(&d_useConjugateResidue,false,"useConjugateResidue","If set to true, the solution found after each iteration will be corrected along the solution direction using `\\lambda^{i+1} -= beta^{i} * (\\lambda^{i} - \\lambda^{i-1})` with beta following the formula beta^{i} = min(1, (i/maxIterations)^{conjugateResidueSpeedFactor}) "))
+    , d_conjugateResidueSpeedFactor(initData(&d_conjugateResidueSpeedFactor,10.0,"conjugateResidueSpeedFactor","FActor used to modulate the speed in which beta used in the conjugate residue part reaches 1.0. The higher the value, the slower the reach. "))
 {
 
 }
@@ -182,7 +186,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     std::vector<SReal> correctedD;
     correctedD.resize(current_cp->getDimension(), 0.0);
 
-//    std::cout<<"Initialized vectors"<<std::endl;
 
     SReal error=0.0;
     bool convergence = false;
@@ -202,17 +205,31 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         i += current_cp->constraintsResolutions[i]->getNbLines();
     }
 
-    sofa::type::vector<SReal> tabErrors(dimension);
+
+
+    bool showGraph = d_computeGraphs.getValue();
+    sofa::type::vector<SReal>* graph_residuals = nullptr;
+    if (showGraph)
+    {
+        graph_residuals = &(*d_graphErrors.beginEdit())["Error"];
+        graph_residuals->clear();
+    }
+
+
 
     int iterCount = 0;
 
-    Eigen::Map<Eigen::MatrixX<SReal>> EigenW(w[0],dimension, dimension) ;
-    SReal eigenRadius = 0;
-    for(auto s : EigenW.eigenvalues())
+    SReal rho = 1.0;
+    if (d_useSpectralCorrection.getValue())
     {
-        eigenRadius=std::max(eigenRadius,norm(s));
+        Eigen::Map<Eigen::MatrixX<SReal>> EigenW(w[0],dimension, dimension) ;
+        SReal eigenRadius = 0;
+        for(auto s : EigenW.eigenvalues())
+        {
+            eigenRadius=std::max(eigenRadius,norm(s));
+        }
+        rho = d_spectralCorrectionFactor.getValue()*std::min(2.0, 0.2 * 2/eigenRadius);
     }
-    const SReal rho = std::min(1.0, 0.9 * 2/eigenRadius);
 
     std::vector<AsynchSubSolver> asynchSolvers;
     //Setup and distribute constraints ids among threads
@@ -247,7 +264,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                     endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
-            std::cout<<"Ids : "<<beginId<<", "<<endId<<std::endl;
             asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
@@ -280,11 +296,11 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     for(int i=0; i<current_cp->maxIterations; i++)
     {
         iterCount ++;
-        const SReal beta = std::min(1.0, pow( ((float)i)/current_cp->maxIterations,0.6));
+        const SReal beta = d_useConjugateResidue.getValue() * std::min(1.0, pow( ((float)i)/current_cp->maxIterations,d_conjugateResidueSpeedFactor.getValue()));
+        bool constraintsAreVerified;
 
         if (usedthreads == 1)
         {
-            bool constraintsAreVerified;
             std::tie(constraintsAreVerified, error) = ImprovedJacobiConstraintSolver::iterate(0, dimension,
                                           dimension, rho, tol, beta,
                                           d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), deltaF.data(), lastF.data(),
@@ -319,7 +335,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                 m_promises[(m_bufferNumber.load()+1)%2].set_value({true,beta });
             }
 
-            bool constraintsAreVerified = true;
             std::tie(constraintsAreVerified, error) = iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
                                                     rho, tol, beta, d, correctedD.data(), dfree, w, force,
                                                     &deltaF[dimension*(m_bufferNumber.load())],&lastF[dimension*(m_bufferNumber.load())], &deltaF[dimension*((m_bufferNumber.load()+1)%2)],&lastF[dimension*((m_bufferNumber.load()+1)%2)],
@@ -339,7 +354,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
             m_bufferNumber.store((m_bufferNumber.load() + 1)%2);
 
-
             if (current_cp->allVerified)
             {
                 if (constraintsAreVerified)
@@ -358,6 +372,10 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
             if (i == current_cp->maxIterations - 1 )
                 m_promises[(m_bufferNumber.load()+1)%2].set_value({false, 0.0});
+        }
+        if (showGraph)
+        {
+            graph_residuals->push_back(error);
         }
     }
 
@@ -394,7 +412,7 @@ std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegi
         constraintCorr[j]->resolution(j,w,correctedD, force, dfree);
         for(unsigned l=j; l<j+nb; ++l )
         {
-            force[l] += beta * deltaF[l] ;
+            force[l] -= beta * deltaF[l] ;
             newDeltaF[l] = force[l] - lastF[l];
             newLastF[l] = force[l];
         }
