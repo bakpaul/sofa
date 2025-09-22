@@ -121,17 +121,20 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
 
     while(true)
     {
+        //Wait for synchronization point for main thread, this allows for error gathering and future change
         std::tie( iterate, beta) = getCurrentFuture().get();
         if( ! iterate)
             break;
 
-        std::lock_guard<std::mutex> lock(m_accessMutex);
-
+        //The two following ID are either 1 or 0
         const int currBuffer = m_solver->m_bufferNumber.load();
+        const int nextBuffer = (currBuffer+1)%2;
+
+        //This allows for synchronization with main thread when starting to accumulate the error,
+        std::lock_guard<std::mutex> lock(m_accessMutex);
         std::tie(m_allVerified, m_currError) = ImprovedJacobiConstraintSolver::iterate(m_idBegin, m_idEnd, m_dimension,
-                                                m_rho, m_tol, beta, m_d, m_correctedD, m_dfree, m_w, m_force,
-                                                m_deltaF + m_dimension*(currBuffer),m_lastF + m_dimension*(currBuffer),
-                                                m_deltaF + m_dimension*((currBuffer+1)%2), m_lastF + m_dimension*((currBuffer+1)%2),
+                                                m_rho, m_tol, beta, m_d, m_correctedD, m_dfree, m_w, m_force, m_lastF,
+                                                m_deltaF + m_dimension*(currBuffer), m_deltaF + m_dimension*(nextBuffer),
                                                 *m_constraintCorr);
 
     }
@@ -178,11 +181,13 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         force[i] = 0.0;
     }
 
-    // The size of those buffer depend on the number of thread that are used.
+    // The size of this buffer depend on the number of thread that are used.
     // If only one thread is used then the vector is of size dimension
     // Else it is of twice the dimensions, to allow the use of a switching buffer mechanism
-    std::vector<SReal> lastF;
     std::vector<SReal> deltaF;
+
+    std::vector<SReal> lastF;
+    lastF.resize(current_cp->getDimension(), 0.0);
 
     std::vector<SReal> correctedD;
     correctedD.resize(current_cp->getDimension(), 0.0);
@@ -218,8 +223,10 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
 
 
+
     int iterCount = 0;
 
+    //Spectral correction computation. The overhead might be big if W is large.
     SReal rho = 1.0;
     if (d_useSpectralCorrection.getValue())
     {
@@ -233,20 +240,17 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     }
 
     std::vector<AsynchSubSolver> asynchSolvers;
-    //Setup and distribute constraints ids among threads
+    //Setup and distribute constraints ids among threads.
     unsigned usedthreads = std::min(d_maximumNumberOfThread.getValue(),
-                                   std::max(1,
-                                            (int) (current_cp->constraintsResolutions.size()/d_minimumNumberOfLinePerThread.getValue()))) ;
+                                   std::max(1,(int) (current_cp->constraintsResolutions.size()/d_minimumNumberOfLinePerThread.getValue()))) ;
     if (usedthreads == 1)
     {
-        lastF.resize(current_cp->getDimension(),0.0);
         deltaF.resize(current_cp->getDimension(),0.0);
     }
     else
     {
         asynchSolvers.reserve(usedthreads);
         //Allocate twice the number of dimension to enable buffer changing mechanism to avoid concurrency
-        lastF.resize(2*current_cp->getDimension(),0.0);
         deltaF.resize(2*current_cp->getDimension(),0.0);
 
         unsigned beginId = 0;
@@ -281,14 +285,17 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
             asynchSolvers.clear();
         else
         {
+            //Setup futures and promises used for synchronization
             m_bufferNumber.store(0);
             m_promises[0] = std::promise<std::tuple<bool, SReal>>();
             m_promises[1] = std::promise<std::tuple<bool, SReal>>();
             std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_promises[0].get_future());
             std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_promises[1].get_future());
 
+            //This counter is only used for the first synchronization point
             m_workerCounter.store(0);
-            for(unsigned i=1; i< usedthreads; ++i)
+            //Launch threads but not the first one given that it'll be the main thread
+            for(unsigned i=1; i< usedthreads; ++i) //Start at 1 because the main thread is in charge of the first set of constraints
             {
                 asynchSolvers[i].m_futures[0] = sharedFuture0;
                 asynchSolvers[i].m_futures[1] = sharedFuture1;
@@ -300,14 +307,16 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     for(int i=0; i<current_cp->maxIterations; i++)
     {
         iterCount ++;
+        //Compute conjugate residue factor
         const SReal beta = d_useConjugateResidue.getValue() * std::min(1.0, pow( ((float)i)/current_cp->maxIterations,d_conjugateResidueSpeedFactor.getValue()));
         bool constraintsAreVerified;
 
+        //If monothreaded simplify everything.
         if (usedthreads == 1)
         {
             std::tie(constraintsAreVerified, error) = iterate(0, dimension,
                                           dimension, rho, tol, beta,
-                                          d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), deltaF.data(), lastF.data(),
+                                          d, correctedD.data(), dfree, w, force, lastF.data(), deltaF.data(),  deltaF.data(),
                                           current_cp->constraintsResolutions );
             if (current_cp->allVerified)
             {
@@ -326,60 +335,60 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         else
         {
 
+            //Current value of bufferNumber is actually the old one because threads are waiting on it right now. So it was the old synchronization point.
+            const int oldNextBufferNumber = m_bufferNumber.load();
+            const int currBufferNumber = (currBufferNumber+ 1)%2;
 
-
+            //If first iteration, then wait for all threads to synchronize then launch iteration
             if(i==0) //First run
             {
                 while(m_workerCounter.load() < usedthreads-1)
                     std::this_thread::sleep_for(std::chrono::microseconds(10)); //TODO is there a better way ?
                 m_workerCounter.store(0);
-
-                m_bufferNumber.store(1);
-                m_promises[0].set_value({true, beta});
-            }
-            else
-            {
-                m_promises[(m_bufferNumber.load()+1)%2].set_value({true,beta });
             }
 
+            //Synchronization point. We know all threads are waiting on oldNextBufferNumber future here, we can switch buffers.
+            m_bufferNumber.store(currBufferNumber);
+            m_promises[oldNextBufferNumber].set_value({true,beta });
+
+
+            //Compute new value of lambda on our set of constraints
             std::tie(constraintsAreVerified, error) = iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
-                                                    rho, tol, beta, d, correctedD.data(), dfree, w, force,
-                                                    deltaF.data() + dimension*(m_bufferNumber.load()),lastF.data() + dimension*(m_bufferNumber.load()),
-                                                    deltaF.data() + dimension*((m_bufferNumber.load()+1)%2),lastF.data() + dimension*((m_bufferNumber.load()+1)%2),
+                                                    rho, tol, beta, d, correctedD.data(), dfree, w, force, lastF.data(),
+                                                    deltaF.data() + dimension*(currBufferNumber), deltaF.data() + dimension*(oldNextBufferNumber),
                                                     current_cp->constraintsResolutions);
 
 
-            m_promises[(m_bufferNumber.load()+ 1)%2] = std::promise<std::tuple<bool, SReal>>();
-            std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_promises[(m_bufferNumber.load()+ 1)%2].get_future());
+            m_promises[oldNextBufferNumber] = std::promise<std::tuple<bool, SReal>>();
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_promises[oldNextBufferNumber].get_future());
 
-            for(unsigned sId = 1 ; sId<usedthreads; ++sId)
+            for(unsigned sId = 1 ; sId<usedthreads; ++sId) //Start at 1 because the main thread is in charge of the first set of constraints
             {
                 std::lock_guard<std::mutex> lock(asynchSolvers[sId].m_accessMutex);
                 error += asynchSolvers[sId].m_currError;
                 constraintsAreVerified &= asynchSolvers[sId].m_allVerified;
-                asynchSolvers[sId].m_futures[(m_bufferNumber.load()+ 1)%2] = sharedFuture;
+                asynchSolvers[sId].m_futures[oldNextBufferNumber] = sharedFuture;
             }
 
-            m_bufferNumber.store((m_bufferNumber.load() + 1)%2);
 
             if (current_cp->allVerified)
             {
                 if (constraintsAreVerified)
                 {
                     convergence = true;
-                    m_promises[(m_bufferNumber.load()+1)%2].set_value({false, 0.0});
+                    m_promises[currBufferNumber].set_value({false, 0.0});
                     break;
                 }
             }
             else if(error < tol && i > 0) // do not stop at the first iteration (that is used for initial guess computation)
             {
                 convergence = true;
-                m_promises[(m_bufferNumber.load()+1)%2].set_value({false, 0.0});
+                m_promises[currBufferNumber].set_value({false, 0.0});
                 break;
             }
 
             if (i == current_cp->maxIterations - 1 )
-                m_promises[(m_bufferNumber.load()+1)%2].set_value({false, 0.0});
+                m_promises[currBufferNumber].set_value({false, 0.0});
         }
         if (showGraph)
         {
@@ -398,8 +407,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
 std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol, SReal beta,
-                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* newDeltaF, SReal* newLastF,
-                 const SReal* deltaF, const SReal* lastF,
+                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force,  SReal* lastF, SReal* newDeltaF,
+                 const SReal* deltaF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr)
 {
 
@@ -424,7 +433,7 @@ std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegi
         {
             force[l] -= beta * deltaF[l] ;
             newDeltaF[l] = force[l] - lastF[l];
-            newLastF[l] = force[l];
+            lastF[l] = force[l];
         }
 
         double cstError = 0.0;
