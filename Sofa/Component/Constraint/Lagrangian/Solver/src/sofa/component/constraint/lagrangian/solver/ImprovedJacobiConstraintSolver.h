@@ -64,8 +64,6 @@ public:
         bool m_allVerified;
         SReal m_currError;
 
-
-
         std::shared_future<std::tuple<bool, SReal>> getCurrentFuture()
         {
             return m_futures[m_solver->m_bufferNumber.load()];
