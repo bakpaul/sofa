@@ -23,6 +23,8 @@
 
 #include <sofa/component/constraint/lagrangian/solver/BuiltConstraintSolver.h>
 #include <sofa/core/behavior/ConstraintResolution.h>
+#include <sofa/simulation/DefaultTaskScheduler.h>
+#include <memory>
 #include <thread>
 #include <future>
 #include <atomic>
@@ -42,6 +44,30 @@ public:
 
     ImprovedJacobiConstraintSolver();
 
+    class AsynchSubSolver;
+
+    struct AsynchData
+    {
+        AsynchData()
+        {
+            m_taskScheduler.reset(simulation::DefaultTaskScheduler::create());
+        }
+
+        void addWorker(unsigned idBegin, unsigned idEnd,
+                 unsigned dimension, SReal rho, SReal tol,
+                 SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr);
+
+        std::unique_ptr<simulation::TaskScheduler> m_taskScheduler;
+
+        std::vector<AsynchSubSolver> m_workerData;
+
+        std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
+        std::atomic_int m_bufferNumber;
+        std::atomic_int m_workerCounter;
+    };
+
+
     class AsynchSubSolver
     {
         friend ImprovedJacobiConstraintSolver;
@@ -49,28 +75,28 @@ public:
         AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
                  SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
-                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, ImprovedJacobiConstraintSolver * solver);
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, AsynchData * container);
 
         AsynchSubSolver(const AsynchSubSolver& from);
-        ~AsynchSubSolver();
+        ~AsynchSubSolver() = default;
 
-        AsynchSubSolver& operator =(const AsynchSubSolver& from);
+        AsynchSubSolver& operator =(const AsynchSubSolver &from);
 
 
         void mainLoop();
-
-        void startThread();
 
         bool m_allVerified;
         SReal m_currError;
 
         std::shared_future<std::tuple<bool, SReal>> getCurrentFuture()
         {
-            return m_futures[m_solver->m_bufferNumber.load()];
+            return m_futures[m_container->m_bufferNumber.load()];
         }
 
         std::array<std::shared_future<std::tuple<bool, SReal>>, 2> m_futures;
         std::mutex m_accessMutex;
+        simulation::CpuTaskStatus m_status;
+
        protected:
 
         unsigned m_idBegin;
@@ -87,12 +113,9 @@ public:
         SReal*  m_lastF;
         std::vector<core::behavior::ConstraintResolution*>* m_constraintCorr;
 
-        ImprovedJacobiConstraintSolver * m_solver;
-
-        std::thread * m_thread;
-
-
+        std::shared_ptr<AsynchData> m_container;
     };
+
 
     /**
      * Based on paper
@@ -107,9 +130,7 @@ public:
                  const SReal* deltaF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
-    std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
+    std::shared_ptr<AsynchData> m_asynchData;
 
-    std::atomic_int m_bufferNumber;
-    std::atomic_int m_workerCounter;
 };
 }

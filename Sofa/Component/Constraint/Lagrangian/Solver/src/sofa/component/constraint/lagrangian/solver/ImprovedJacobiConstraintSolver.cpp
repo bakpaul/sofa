@@ -33,7 +33,7 @@ namespace sofa::component::constraint::lagrangian::solver
 ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol,
                  SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
-                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, ImprovedJacobiConstraintSolver * solver)
+                 std::vector<core::behavior::ConstraintResolution*>* constraintCorr, AsynchData * container)
 : m_idBegin(idBegin)
 , m_idEnd(idEnd)
 , m_dimension(dimension)
@@ -47,8 +47,7 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(unsigned idBegi
 , m_deltaF(deltaF)
 , m_lastF(lastF)
 , m_constraintCorr(constraintCorr)
-, m_solver(solver)
-, m_thread(nullptr)
+, m_container(container)
 , m_allVerified(false)
 , m_currError(0.0)
 {
@@ -69,8 +68,7 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver::AsynchSubSolver(const AsynchSub
 , m_deltaF(from.m_deltaF)
 , m_lastF(from.m_lastF)
 , m_constraintCorr(from.m_constraintCorr)
-, m_solver(from.m_solver)
-, m_thread(nullptr)
+, m_container(from.m_container)
 , m_allVerified(from.m_allVerified)
 , m_currError(from.m_currError)
 {}
@@ -90,25 +88,9 @@ ImprovedJacobiConstraintSolver::AsynchSubSolver & ImprovedJacobiConstraintSolver
     m_deltaF = from.m_deltaF;
     m_lastF = from.m_lastF;
     m_constraintCorr = from.m_constraintCorr;
-    m_solver = from.m_solver;
-    m_thread = from.m_thread;
+    m_container = from.m_container;
     m_allVerified = from.m_allVerified;
     m_currError = from.m_currError;
-}
-
-ImprovedJacobiConstraintSolver::AsynchSubSolver::~AsynchSubSolver()
-{
-    if(!m_thread)
-        return;
-
-    if (m_thread->joinable())
-        m_thread->detach();
-
-}
-
-void ImprovedJacobiConstraintSolver::AsynchSubSolver::startThread()
-{
-    this->m_thread = new std::thread(std::bind(&ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop, this));
 }
 
 
@@ -117,17 +99,17 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
 {
     bool iterate;
     SReal beta;
-    std::atomic_fetch_add(&m_solver->m_workerCounter,1 );
+    std::atomic_fetch_add(&m_container->m_workerCounter,1 );
 
     while(true)
     {
         //Wait for synchronization point for main thread, this allows for error gathering and future change
-        std::tie( iterate, beta) = m_futures[m_solver->m_bufferNumber.load()].get();
+        std::tie( iterate, beta) = m_futures[m_container->m_bufferNumber.load()].get();
         if( ! iterate)
             break;
 
         //The two following ID are either 1 or 0
-        const int currBuffer = m_solver->m_bufferNumber.load();
+        const int currBuffer = m_container->m_bufferNumber.load();
         const int nextBuffer = (currBuffer+1)%2;
 
         //This allows for synchronization with main thread when starting to accumulate the error,
@@ -142,6 +124,14 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
 }
 
 
+void ImprovedJacobiConstraintSolver::AsynchData::addWorker(unsigned idBegin, unsigned idEnd,
+            unsigned dimension, SReal rho, SReal tol,
+            SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
+            std::vector<core::behavior::ConstraintResolution*>* constraintCorr)
+{
+    m_workerData.emplace_back(idBegin, idEnd, dimension, rho, tol, d,correctedD, dfree, w, force, deltaF, lastF, constraintCorr, this);
+}
+
 ImprovedJacobiConstraintSolver::ImprovedJacobiConstraintSolver()
     : BuiltConstraintSolver()
     , d_maximumNumberOfThread(initData(&d_maximumNumberOfThread, 1, "maximumNumberOfThread", "Number of thread to execute solver concurrently"))
@@ -150,13 +140,15 @@ ImprovedJacobiConstraintSolver::ImprovedJacobiConstraintSolver()
     , d_spectralCorrectionFactor(initData(&d_spectralCorrectionFactor,1.0,"spectralCorrectionFactor","Factor used to modulate the spectral correction"))
     , d_useConjugateResidue(initData(&d_useConjugateResidue,false,"useConjugateResidue","If set to true, the solution found after each iteration will be corrected along the solution direction using `\\lambda^{i+1} -= beta^{i} * (\\lambda^{i} - \\lambda^{i-1})` with beta following the formula beta^{i} = min(1, (i/maxIterations)^{conjugateResidueSpeedFactor}) "))
     , d_conjugateResidueSpeedFactor(initData(&d_conjugateResidueSpeedFactor,10.0,"conjugateResidueSpeedFactor","FActor used to modulate the speed in which beta used in the conjugate residue part reaches 1.0. The higher the value, the slower the reach. "))
-{
-
-}
+    , m_asynchData(nullptr)
+{}
 
 void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 {
     SCOPED_TIMER_VARNAME(gaussSeidelTimer, "ConstraintsGaussSeidel");
+
+    if (m_asynchData == nullptr && d_maximumNumberOfThread.getValue() > 1 )
+        m_asynchData.reset(new AsynchData());
 
 
     const int dimension = current_cp->getDimension();
@@ -234,7 +226,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         rho = d_spectralCorrectionFactor.getValue()*std::min(2.0, 0.2 * 2/eigenRadius);
     }
 
-    std::vector<AsynchSubSolver> asynchSolvers;
     //Setup and distribute constraints ids among threads.
     unsigned usedthreads = std::min(d_maximumNumberOfThread.getValue(),
                                    std::max(1,(int) (current_cp->constraintsResolutions.size()/d_minimumNumberOfLinePerThread.getValue()))) ;
@@ -244,7 +235,7 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
     }
     else
     {
-        asynchSolvers.reserve(usedthreads);
+        m_asynchData->m_workerData.reserve(usedthreads);
         //Allocate twice the number of dimension to enable buffer changing mechanism to avoid concurrency
         deltaF.resize(2*current_cp->getDimension(),0.0);
 
@@ -265,34 +256,36 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                     endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
-            asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
+            m_asynchData->addWorker(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions));
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
             // Or worse, when whe have nbThread=3, dimension = 3 but only one constraint resolution exists.
             // For now on, the number of thread is actually asynchSolvers.size().
         }
-        usedthreads = asynchSolvers.size();
+        usedthreads = m_asynchData->m_workerData.size();
 
         //If we have only one thread, let's stay on the main one
         if (usedthreads == 1)
-            asynchSolvers.clear();
+            m_asynchData->m_workerData.clear();
         else
         {
+            m_asynchData->m_taskScheduler->init(usedthreads-1);
+
             //Setup futures and promises used for synchronization
-            m_bufferNumber.store(0);
-            m_promises[0] = std::promise<std::tuple<bool, SReal>>();
-            m_promises[1] = std::promise<std::tuple<bool, SReal>>();
-            std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_promises[0].get_future());
-            std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_promises[1].get_future());
+            m_asynchData->m_bufferNumber.store(0);
+            m_asynchData->m_promises[0] = std::promise<std::tuple<bool, SReal>>();
+            m_asynchData->m_promises[1] = std::promise<std::tuple<bool, SReal>>();
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture0(m_asynchData->m_promises[0].get_future());
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture1(m_asynchData->m_promises[1].get_future());
 
             //This counter is only used for the first synchronization point
-            m_workerCounter.store(0);
+            m_asynchData->m_workerCounter.store(0);
             //Launch threads but not the first one given that it'll be the main thread
             for(unsigned i=1; i< usedthreads; ++i) //Start at 1 because the main thread is in charge of the first set of constraints
             {
-                asynchSolvers[i].m_futures[0] = sharedFuture0;
-                asynchSolvers[i].m_futures[1] = sharedFuture1;
-                asynchSolvers[i].startThread();
+                m_asynchData->m_workerData[i].m_futures[0] = sharedFuture0;
+                m_asynchData->m_workerData[i].m_futures[1] = sharedFuture1;
+                m_asynchData->m_taskScheduler->addTask(m_asynchData->m_workerData[i].m_status, [data = &m_asynchData->m_workerData[i]](){data->mainLoop();});
             }
         }
     }
@@ -329,38 +322,38 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         {
 
             //Current value of bufferNumber is actually the old one because threads are waiting on it right now. So it was the old synchronization point.
-            const int oldNextBufferNumber = m_bufferNumber.load();
+            const int oldNextBufferNumber = m_asynchData->m_bufferNumber.load();
             const int currBufferNumber = (currBufferNumber+ 1)%2;
 
             //If first iteration, then wait for all threads to synchronize then launch iteration
             if(i==0) //First run
             {
-                while(m_workerCounter.load() < usedthreads-1)
+                while(m_asynchData->m_workerCounter.load() < usedthreads-1)
                     std::this_thread::sleep_for(std::chrono::microseconds(10)); //TODO is there a better way ?
-                m_workerCounter.store(0);
+                m_asynchData->m_workerCounter.store(0);
             }
 
             //Synchronization point. We know all threads are waiting on oldNextBufferNumber future here, we can switch buffers.
-            m_bufferNumber.store(currBufferNumber);
-            m_promises[oldNextBufferNumber].set_value({true,beta });
+            m_asynchData->m_bufferNumber.store(currBufferNumber);
+            m_asynchData->m_promises[oldNextBufferNumber].set_value({true,beta });
 
 
             //Compute new value of lambda on our set of constraints
-            std::tie(constraintsAreVerified, error) = iterate(asynchSolvers[0].m_idBegin, asynchSolvers[0].m_idEnd, dimension,
+            std::tie(constraintsAreVerified, error) = iterate(m_asynchData->m_workerData[0].m_idBegin, m_asynchData->m_workerData[0].m_idEnd, dimension,
                                                     rho, tol, beta, d, correctedD.data(), dfree, w, force, lastF.data(),
                                                     deltaF.data() + dimension*(currBufferNumber), deltaF.data() + dimension*(oldNextBufferNumber),
                                                     current_cp->constraintsResolutions);
 
 
-            m_promises[oldNextBufferNumber] = std::promise<std::tuple<bool, SReal>>();
-            std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_promises[oldNextBufferNumber].get_future());
+            m_asynchData->m_promises[oldNextBufferNumber] = std::promise<std::tuple<bool, SReal>>();
+            std::shared_future<std::tuple<bool, SReal>> sharedFuture(m_asynchData->m_promises[oldNextBufferNumber].get_future());
 
             for(unsigned sId = 1 ; sId<usedthreads; ++sId) //Start at 1 because the main thread is in charge of the first set of constraints
             {
-                std::lock_guard<std::mutex> lock(asynchSolvers[sId].m_accessMutex);
-                error += asynchSolvers[sId].m_currError;
-                constraintsAreVerified &= asynchSolvers[sId].m_allVerified;
-                asynchSolvers[sId].m_futures[oldNextBufferNumber] = sharedFuture;
+                std::lock_guard<std::mutex> lock(m_asynchData->m_workerData[sId].m_accessMutex);
+                error += m_asynchData->m_workerData[sId].m_currError;
+                constraintsAreVerified &= m_asynchData->m_workerData[sId].m_allVerified;
+                m_asynchData->m_workerData[sId].m_futures[oldNextBufferNumber] = sharedFuture;
             }
 
 
@@ -369,25 +362,32 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                 if (constraintsAreVerified)
                 {
                     convergence = true;
-                    m_promises[currBufferNumber].set_value({false, 0.0});
+                    m_asynchData->m_promises[currBufferNumber].set_value({false, 0.0});
                     break;
                 }
             }
             else if(error < tol && i > 0) // do not stop at the first iteration (that is used for initial guess computation)
             {
                 convergence = true;
-                m_promises[currBufferNumber].set_value({false, 0.0});
+                m_asynchData->m_promises[currBufferNumber].set_value({false, 0.0});
                 break;
             }
 
             if (i == current_cp->maxIterations - 1 )
-                m_promises[currBufferNumber].set_value({false, 0.0});
+                m_asynchData->m_promises[currBufferNumber].set_value({false, 0.0});
         }
         if (showGraph)
         {
             graph_residuals->push_back(error);
         }
 
+    }
+
+    std::cout<<"Getting out"<<std::endl;
+    if (usedthreads > 1)
+    {
+        m_asynchData->m_taskScheduler->stop();
+        m_asynchData->m_workerData.clear();
     }
 
     sofa::helper::AdvancedTimer::valSet("GS iterations", current_cp->currentIterations);

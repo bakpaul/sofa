@@ -108,7 +108,7 @@ private:
     DefaultTaskScheduler();
             
     DefaultTaskScheduler(const DefaultTaskScheduler&) = delete;
-            
+
     ~DefaultTaskScheduler() override;
 
     /**
