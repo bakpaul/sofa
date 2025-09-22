@@ -27,7 +27,7 @@
     <VisualStyle displayFlags="showForceFields"/>
     <ConstraintAttachButtonSetting /> <!-- The presence of this component sets the mouse interaction to Lagrangian-based constraints at the GUI launch -->
     <FreeMotionAnimationLoop />
-    <ImprovedJacobiConstraintSolver maxIterations="5000" tolerance="1.0e-8" maximumNumberOfThread="8" minimumNumberOfLinePerThread="200" useConjugateResidue="false" useSpectralCorrection="true" spectralCorrectionFactor="1.0"/>
+    <ImprovedJacobiConstraintSolver maxIterations="5000" tolerance="1.0e-8" computeGraphs="true" maximumNumberOfThread="3" minimumNumberOfLinePerThread="10" useConjugateResidue="false" useSpectralCorrection="true" spectralCorrectionFactor="1.0"/>
     <CollisionPipeline name="Pipeline" />
     <BruteForceBroadPhase name="BroadPhase" />
     <BVHNarrowPhase name="NarrowPhase" />
@@ -35,7 +35,7 @@
     <NewProximityIntersection name="Intersection" alarmDistance="0.02" contactDistance="0.001" />
 
     <Node name="BEAMVOLUME">
-        <RegularGridTopology name="HexaTop" n="10 10 10" min="0.1 0 0" max="0.4 0.1 0.1"/>
+        <RegularGridTopology name="HexaTop" n="6 6 6" min="0.1 0 0" max="0.4 0.1 0.1"/>
         <TetrahedronSetTopologyContainer name="Container" position="@HexaTop.position"/>
         <TetrahedronSetTopologyModifier name="Modifier"/>
         <Hexa2TetraTopologicalMapping input="@HexaTop" output="@Container" swapping="true"/>

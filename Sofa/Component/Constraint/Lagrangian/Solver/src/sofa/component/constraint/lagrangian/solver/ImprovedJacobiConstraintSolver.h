@@ -47,7 +47,7 @@ public:
         friend ImprovedJacobiConstraintSolver;
     public:
         AsynchSubSolver(unsigned idBegin, unsigned idEnd,
-                 unsigned dimension, SReal rho, SReal tol,
+                 unsigned dimension, unsigned maxIt,  SReal rho, SReal tol,
                  SReal *d, SReal *correctedD, SReal *dfree, SReal** w, SReal* force, SReal* deltaF, SReal* lastF,
                  std::vector<core::behavior::ConstraintResolution*>* constraintCorr, ImprovedJacobiConstraintSolver * solver);
 
@@ -86,6 +86,7 @@ public:
         SReal*  m_deltaF;
         SReal*  m_lastF;
         std::vector<core::behavior::ConstraintResolution*>* m_constraintCorr;
+        unsigned m_maxIt;
 
         ImprovedJacobiConstraintSolver * m_solver;
 
