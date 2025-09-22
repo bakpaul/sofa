@@ -122,7 +122,7 @@ void ImprovedJacobiConstraintSolver::AsynchSubSolver::mainLoop()
     while(true)
     {
         //Wait for synchronization point for main thread, this allows for error gathering and future change
-        std::tie( iterate, beta) = getCurrentFuture().get();
+        std::tie( iterate, beta) = m_futures[m_solver->m_bufferNumber.load()].get();
         if( ! iterate)
             break;
 
@@ -211,8 +211,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         i += current_cp->constraintsResolutions[i]->getNbLines();
     }
 
-
-
     bool showGraph = d_computeGraphs.getValue();
     sofa::type::vector<SReal>* graph_residuals = nullptr;
     if (showGraph)
@@ -220,9 +218,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         graph_residuals = &(*d_graphErrors.beginEdit())["Error"];
         graph_residuals->clear();
     }
-
-
-
 
     int iterCount = 0;
 
@@ -255,9 +250,8 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
 
         unsigned beginId = 0;
         unsigned endId = 0;
-        //Define how many thread to use
-        std::cout<<"Dimension "<<dimension<<std::endl;
 
+        //Define how many thread to use
         for (unsigned j=0; j<usedthreads && endId < current_cp->constraintsResolutions.size(); ++j)
         {
             if (j == usedthreads - 1)
@@ -271,7 +265,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
                     endId += current_cp->constraintsResolutions[endId]->getNbLines();
                 }
             }
-            std::cout<<"Builder "<<j<<" : "<<beginId<< ", "<<endId<<std::endl;
             asynchSolvers.emplace_back(beginId, endId, dimension, rho, tol, d, correctedD.data(), dfree, w, force, deltaF.data(), lastF.data(), &(current_cp->constraintsResolutions), this);
             beginId = endId;
             //If endId == current_cp->constraintsResolutions.size() we go out, so the number of actual thread might be smaller than expected. This can happen for instance in a case where dimension = 4 but we only have 3 constraint resolutions
@@ -394,7 +387,6 @@ void ImprovedJacobiConstraintSolver::doSolve( SReal timeout)
         {
             graph_residuals->push_back(error);
         }
-        std::cout<<"error ("<<i<<"): "<<error<<std::endl;
 
     }
 
@@ -414,7 +406,6 @@ std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegi
 
     bool constraintsAreVerified = true;
     SReal error=0.0;
-
     for(unsigned j=idBegin; j<idEnd; ) // increment of j realized at the end of the loop
     {
         // 1. nbLines provide the dimension of the constraint
@@ -428,6 +419,14 @@ std::tuple<bool, SReal>  ImprovedJacobiConstraintSolver::iterate(unsigned idBegi
             }
             correctedD[l] = rho * d[l]  ;
         }
+        j += nb;
+    }
+
+    for(unsigned j=idBegin; j<idEnd; ) // increment of j realized at the end of the loop
+    {
+        // 1. nbLines provide the dimension of the constraint
+        const unsigned int nb = constraintCorr[j]->getNbLines();
+
         constraintCorr[j]->resolution(j,w,correctedD, force, dfree);
         for(unsigned l=j; l<j+nb; ++l )
         {
