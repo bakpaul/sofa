@@ -105,8 +105,8 @@ public:
 
     static std::tuple<bool, SReal> iterate(unsigned idBegin, unsigned idEnd,
                  unsigned dimension, SReal rho, SReal tol, SReal beta,
-                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* newDeltaF, SReal* newLastF,
-                 const SReal* deltaF, const SReal* lastF,
+                 SReal *d, SReal* correctedD, SReal* dfree, SReal** w, SReal* force, SReal* lastF, SReal* newDeltaF,
+                 const SReal* deltaF,
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
     std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
