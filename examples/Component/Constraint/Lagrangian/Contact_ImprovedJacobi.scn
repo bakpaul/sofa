@@ -27,7 +27,7 @@
     <VisualStyle displayFlags="showForceFields"/>
     <ConstraintAttachButtonSetting /> <!-- The presence of this component sets the mouse interaction to Lagrangian-based constraints at the GUI launch -->
     <FreeMotionAnimationLoop />
-    <ImprovedJacobiConstraintSolver maxIterations="5000" tolerance="1.0e-8" computeGraphs="true" maximumNumberOfThread="3" minimumNumberOfLinePerThread="10" useConjugateResidue="false" useSpectralCorrection="true" spectralCorrectionFactor="1.0"/>
+    <ImprovedJacobiConstraintSolver maxIterations="3000" tolerance="1.0e-8" computeGraphs="true" maximumNumberOfThread="10" minimumNumberOfLinePerThread="100" useConjugateResidue="false" useSpectralCorrection="true" spectralCorrectionFactor="1.0"/>
     <CollisionPipeline name="Pipeline" />
     <BruteForceBroadPhase name="BroadPhase" />
     <BVHNarrowPhase name="NarrowPhase" />
@@ -35,7 +35,7 @@
     <NewProximityIntersection name="Intersection" alarmDistance="0.02" contactDistance="0.001" />
 
     <Node name="BEAMVOLUME">
-        <RegularGridTopology name="HexaTop" n="6 6 6" min="0.1 0 0" max="0.4 0.1 0.1"/>
+        <RegularGridTopology name="HexaTop" n="20 15 2" min="0.1 0 0" max="0.4 0.1 0.1"/>
         <TetrahedronSetTopologyContainer name="Container" position="@HexaTop.position"/>
         <TetrahedronSetTopologyModifier name="Modifier"/>
         <Hexa2TetraTopologicalMapping input="@HexaTop" output="@Container" swapping="true"/>
@@ -44,7 +44,7 @@
     <Node name="FEM">
         <EulerImplicitSolver firstOrder="false" rayleighMass="0.1" rayleighStiffness="0.1"/>
         <PCGLinearSolver preconditioner="@precond"/>
-        <SparseLDLSolver name="precond" template="CompressedRowSparseMatrixMat3x3" parallelInverseProduct="true" />
+        <SparseLDLSolver name="precond" template="CompressedRowSparseMatrixMat3x3" parallelInverseProduct="false" />
 
         <TetrahedronSetTopologyContainer name="Container" position="@../BEAMVOLUME/HexaTop.position"
                                          tetrahedra="@../BEAMVOLUME/Container.tetrahedra"/>
