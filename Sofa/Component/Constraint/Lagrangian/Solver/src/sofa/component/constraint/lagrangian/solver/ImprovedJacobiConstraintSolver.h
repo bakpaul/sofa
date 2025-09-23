@@ -26,6 +26,7 @@
 #include <thread>
 #include <future>
 #include <atomic>
+#include <semaphore>
 
 namespace sofa::component::constraint::lagrangian::solver
 {
@@ -109,6 +110,7 @@ public:
                  std::vector<core::behavior::ConstraintResolution*>& constraintCorr);
 
     std::array<std::promise<std::tuple<bool, SReal>>, 2> m_promises;
+    int m_nbThreads;
 
     std::atomic_int m_bufferNumber;
     std::atomic_int m_workerCounter;
