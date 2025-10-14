@@ -62,9 +62,9 @@
         <TetrahedronSetTopologyContainer name="Container" src="@LogoLoader" />
         <TetrahedronSetTopologyModifier name="Modifier"/>
         <MechanicalObject name="LogoDOF" template="Vec3d" />
-        <TetrahedronFEMForceField name="LinearElasticityFEM"  youngModulus="200" poissonRatio="0.4" method="large" />
+        <TetrahedronFEMForceField name="LinearElasticityFEM"  youngModulus="20" poissonRatio="0.4" method="large" />
         <ConstantForceField name="ConstantForceUpwards" totalForce="0 0 -5.0" />
-        <MeshMatrixMass name="Mass" totalMass="0.1" />
+        <MeshMatrixMass name="Mass" totalMass="1" />
 
         <Node name="Collision">
             <SphereLoader name="SphereLoader" filename="mesh/SofaScene/LogoColli.sph" />
@@ -122,7 +122,7 @@
         <TetrahedronSetTopologyModifier name="Modifier"/>
         <MechanicalObject name="SDOF" template="Vec3d" />
         <TetrahedronFEMForceField name="LinearElasticityFEM" youngModulus="200" poissonRatio="0.45" method="large" />
-        <MeshMatrixMass name="Mass" totalMass="0.15" />
+        <MeshMatrixMass name="Mass" totalMass="0.55" />
 
         <Node name="Collision">
             <TriangleSetTopologyContainer name="Container" />

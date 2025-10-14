@@ -72,7 +72,7 @@
         <!-- Direct linear solver used for the computation of linear products using the system matrix $Ax=b$ -->
         <SparseLDLSolver name="ldl" template="CompressedRowSparseMatrixMat3x3" parallelInverseProduct="true" />
         <!-- Topology contains all topological information: elements type, elements array-->
-        <TetrahedronSetTopologyContainer name="Container" position="@../BeamDomainFromGridTopology/HexaTop.position" tetrahedra="@../BeamDomainFromGridTopology/TetraTopology/Container.tetrahedra"/>
+        <TetrahedronSetTopologyContainer name="Container" position="@../BeamDomainFromGridTopology/break/HexaTop.position" tetrahedra="@../BeamDomainFromGridTopology/TetraTopology/Container.tetrahedra"/>
         <TetrahedronSetTopologyModifier name="Modifier"/>
 
         <!-- MechanicalObject contains all mechanical quantity of the object (e.g. position, velocity, acceleration, forces, constraints forces, etc...)
@@ -90,7 +90,7 @@
             <TriangleSetTopologyModifier name="Modifier"/>
 
             <!-- Extract surface of the simulated topology to account for contacts -->
-            <Tetra2TriangleTopologicalMapping input="@../Container" output="@Container" flipNormals="false"/>
+            <Tetra2TriangleTopologicalMapping input="@../break/Container" output="@Container" flipNormals="false"/>
             <MechanicalObject name="dofs" rest_position="@../mstate.rest_position"/>
 
             <!-- This uses triangles as colliding element. These triangular primitives are the triangles present in the topology

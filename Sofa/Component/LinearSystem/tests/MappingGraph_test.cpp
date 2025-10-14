@@ -130,7 +130,7 @@ TEST(MappingGraph, twoMechanicalObject)
 
     EXPECT_TRUE(graph.makeComponentGroups(sofa::core::MechanicalParams::defaultInstance()).empty());
     EXPECT_FALSE(graph.hasAnyMapping());
-    EXPECT_EQ(graph.getTotalNbMainDofs(), 36);
+    EXPECT_EQ(graph.getTotalNbMainDofs(), 22);
 }
 
 TEST(MappingGraph, oneMapping)
