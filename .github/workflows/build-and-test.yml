@@ -283,7 +283,7 @@ jobs:
                 default_tag=master
               fi       
 
-              echo "dckr_pat_ohBds9gXTs9Iy91QPKJZXGdVS5s" | docker login -u sofaframework --password-stdin   
+              docker login -u sofaframework --password ${DOCKERHUB_TOKEN}
 
               echo "Pulling Docker image sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} ..."
               docker pull --quiet sofaframework/sofabuilder_${builder_type}:${CI_BRANCH} || true
@@ -371,41 +371,59 @@ jobs:
         if: always()
         shell: bash
         run: |
-          bold=$(tput bold)
-          normal=$(tput sgr0)
+          bold="\033[1m"
+          normal="\033[0m"
           if [[ "${{ steps.configure.outcome }}" == "failure" || "${{ steps.clone.outcome }}" == "failure" ]]; then
-            echo "❌ Something whent wrong during the fconfigure or clone steps..."
-            echo "${bold}Please check this action logs${normal}"
-            exit 1
-          elif [[ "${{ steps.build-step.outcome }}" == "failure" ]]; then
-            echo "❌ Build step failed"
-            echo "${bold}You can download all logs here : ${{ steps.publish-build-logs.outputs.artifact-url }}${normal}"
-            exit 1
-          elif [[ "${{ steps.launch-tests-step.outcome }}" == "failure" ]]; then
-            echo "❌ Launch tests step failed"
-            exit 1
-          elif [[ "$(cd "${{ env.BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == "" ]]; then
-            echo "❌ Tests have resulted in errors:"
-            echo ""
-            echo "#----------------------------------------#"
-            for testType in 'unit' 'scene' 'regression';
-              do 
-                for errorType in 'errors' 'crashes' 'failure';
-                do
-                  if [ -f "${{ env.BUILD_DIR }}/tests_results/${testType}-tests_${errorType}" ]; then 
-                    echo ""
-                    echo "${bold}${testType^} ${errorType}:${normal}"
-                    echo ""
-                    cat "${{ env.BUILD_DIR }}/tests_results/${testType}-tests_${errorType}"
-                    echo ""
-                    echo "#----------------------------------------#"
-                  fi
-                done
-              done
-            echo "${bold}You can download all logs here : ${{ steps.publish-tests-logs.outputs.artifact-url }}${normal}"
+            echo "❌ Something whent wrong during the configure or clone steps..."
+            echo -e "${bold}Please check those actions logs${normal}"
             exit 1
           else
-            echo "✅ Both build and test steps ran successfully."
+            echo "✅ Setup OK."
+          fi
+
+          if [[ "${{ steps.build-step.outcome }}" == "failure" ]]; then
+            echo "❌ Build step failed"
+            echo -e "${bold}You can download all logs here : ${{ steps.publish-build-logs.outputs.artifact-url }}${normal}"
+            exit 1
+          else
+            echo "✅ Build OK."
+          fi
+          
+          if [[ "${{ inputs.generate-binaries }}" == "false" ]]; then
+            if [[ "${{ steps.launch-tests-step.outcome }}" == "failure" ]]; then
+              echo "❌ Something whent wrong during the Launch tests step"
+              echo -e "${bold}Please check this action logs, and download tests logs here: ${{ steps.publish-tests-logs.outputs.artifact-url }}${normal}"
+              exit 1
+            elif [[ "$(cd "${{ env.BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" != "" ]]; then
+              echo "❌ Tests have resulted in : "
+              echo ""
+              python3 ${{ env.CI_DIR }}/scripts/generate-tests-table.py "${{ env.BUILD_DIR }}/tests_results/"
+              echo ""
+              echo "#----------------------------------------#"
+              echo "#---------------Quick Logs---------------#"
+              echo "#----------------------------------------#"
+              for testType in 'unit' 'scene' 'regression';
+                do 
+                  for errorType in 'errors' 'crashes' 'failure';
+                  do
+                    if [ -f "${{ env.BUILD_DIR }}/tests_results/${testType}-tests_${errorType}" ]; then 
+                      echo ""
+                      echo -e "${bold}${testType^} ${errorType}:${normal}"
+                      echo ""
+                      cat "${{ env.BUILD_DIR }}/tests_results/${testType}-tests_${errorType}"
+                      echo ""
+                      echo "#----------------------------------------#"
+                    fi
+                  done
+                done
+              echo -e "${bold}You can download all logs here : ${{ steps.publish-tests-logs.outputs.artifact-url }}${normal}"
+              exit 1
+            else
+              echo "✅ Tests where successful : "
+              echo ""
+              python3 ${{ env.CI_DIR }}/scripts/generate-tests-table.py "${{ env.BUILD_DIR }}/tests_results/"
+              echo ""
+            fi
           fi
 
 
