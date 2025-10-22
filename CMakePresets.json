@@ -79,7 +79,7 @@
       }
     },
     {
-      "name": "standard",
+      "name": "full",
       "displayName": "Standard Config",
       "description": "Adds the default GUI, the SofaPhysics API, the examples based on SimpleAPI and the Python3 support",
       "hidden": false,
@@ -98,19 +98,6 @@
           "value": "ON"
         },
         "SOFA_FETCH_SOFAPYTHON3": {
-          "type": "BOOL",
-          "value": "ON"
-        }
-      }
-    },
-    {
-      "name": "full",
-      "displayName": "Full Config",
-      "description": "Adds all plugins known to be functional (Release configuration)",
-      "hidden": false,
-      "inherits": ["standard","defaultGUI"],
-      "cacheVariables": {
-        "PLUGIN_DIFFUSIONSOLVER": {
           "type": "BOOL",
           "value": "ON"
         }
@@ -156,16 +143,9 @@
       "inherits": ["minimal","developer"]
     },
     {
-      "name": "standard-dev",
+      "name": "full-dev",
       "displayName": "Standard Developer Settings",
       "description": "Standard with developer settings",
-      "hidden": false,
-      "inherits": ["standard","developer"]
-    },
-    {
-      "name": "full-dev",
-      "displayName": "Full Developer Settings",
-      "description": "Full with developer settings",
       "hidden": false,
       "inherits": ["full","developer"]
     }
