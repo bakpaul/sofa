@@ -236,8 +236,8 @@ jobs:
 
             # Format the CMake flags for this key and append to the result
             fixed_name=$(echo "$key" |  awk '{gsub(/\./, "_"); print toupper($0)}')
-            flag_repository="-D${fixed_name}_GIT_REPOSITORY=\"$repo_url\"
-            flag_tag="-D${fixed_name}_GIT_TAG=\"$branch_name\"
+            flag_repository="-D${fixed_name}_GIT_REPOSITORY=\"$repo_url\""
+            flag_tag="-D${fixed_name}_GIT_TAG=\"$branch_name\""
 
             # Append both flags to the result string with a space
             CMAKE_OPTIONS="$CMAKE_OPTIONS $flag_repository $flag_tag "
@@ -330,7 +330,7 @@ jobs:
               docker run --rm \
                   --user $(id -u):$(id -g) --network=host -v $WORKSPACE:/workspace \
                   ${DOCKER_IMAGE} \
-                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/scripts/ ${NODE_NAME} ${{ inputs.python-version }} UNIT"             
+                  /bin/bash -c "env ; cd /workspace; /bin/bash $DOCKER_CI_DIR/scripts/test.sh $DOCKER_BUILD_DIR $DOCKER_SRC_DIR $DOCKER_CI_DIR/scripts/ ${NODE_NAME} ${{ inputs.python-version }} UNIT"             
           else
               echo "Launching unit test suite."
 
@@ -354,7 +354,7 @@ jobs:
               docker run --rm \
                   --user $(id -u):$(id -g) --network=host -v $WORKSPACE:/workspace \
                   ${DOCKER_IMAGE} \
-                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/scripts/ ${NODE_NAME} ${{ inputs.python-version }} SCENE"             
+                  /bin/bash -c "env ; cd /workspace; /bin/bash $DOCKER_CI_DIR/scripts/test.sh $DOCKER_BUILD_DIR $DOCKER_SRC_DIR $DOCKER_CI_DIR/scripts/ ${NODE_NAME} ${{ inputs.python-version }} SCENE"             
           else
               echo "Launching scene test suite."
 
@@ -378,7 +378,7 @@ jobs:
               docker run --rm \
                   --user $(id -u):$(id -g) --network=host -v $WORKSPACE:/workspace \
                   ${DOCKER_IMAGE} \
-                  /bin/bash -c "env ; cd /workspace; /bin/bash ./ci/scripts/test.sh /workspace/build/ /workspace/sofa/ /workspace/ci/scripts/ ${NODE_NAME} ${{ inputs.python-version }} REGRESSION"             
+                  /bin/bash -c "env ; cd /workspace; /bin/bash $DOCKER_CI_DIR/scripts/test.sh $DOCKER_BUILD_DIR $DOCKER_SRC_DIR $DOCKER_CI_DIR/scripts/ ${NODE_NAME} ${{ inputs.python-version }} REGRESSION"             
           else
               echo "Launching regression test suite"
 
