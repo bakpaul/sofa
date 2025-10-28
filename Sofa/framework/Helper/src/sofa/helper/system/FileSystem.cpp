@@ -149,7 +149,7 @@ bool FileSystem::createDirectory(const std::string& path)
     int status = mkdir(path.c_str(), 0755);
     if (status && status != EEXIST)
     {
-        msg_error(error) << path << ": " << strerror(errno);
+        msg_error(error) << path << ": " << strerror(errno) << ". With status: " << status;
         return true;
     }
 #endif
