@@ -5,6 +5,7 @@ name: Nightly generate binaries
 
 
 on:
+  workflow_dispatch:
   # Nightly build
   schedule:
     - cron: '0 2 * * *'   # Evevery night
