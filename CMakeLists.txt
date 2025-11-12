@@ -46,6 +46,7 @@ set(SOFA_PLUGINS_RELOCATABLE_PATH "plugins" CACHE STRING "Relocatable path that 
 set(SOFA_PROJECTS_RELOCATABLE_PATH "projects" CACHE STRING "Relocatable path that will be used ot install projects")
 
 
+option(SOFA_LIGHT "Only activate a subpart of the project" OFF)
 
 # Option for packaging
 option(SOFA_BUILD_RELEASE_PACKAGE "Run package specific configure" OFF)

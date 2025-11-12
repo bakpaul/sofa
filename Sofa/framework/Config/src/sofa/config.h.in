@@ -31,6 +31,8 @@
 // fixes CGAL plugin build errors (default value: 5)
 #define BOOST_PARAMETER_MAX_ARITY 12
 
+#cmakedefine SOFA_LIGHT
+
 #cmakedefine SOFA_DETECTIONOUTPUT_FREEMOTION
 
 #cmakedefine SOFA_FLOAT

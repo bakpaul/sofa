@@ -55,6 +55,18 @@
       }
     },
     {
+      "name": "light",
+      "displayName": "Lightweight configuration",
+      "description": "SOFA as a a small part of the core",
+      "hidden": false,
+      "cacheVariables": {
+        "SOFA_LIGHT": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
       "name": "defaultGUI",
       "displayName": "Default GUI configuration",
       "description": "Hidden preset to be used to add default GUI and OpenGL support to other preset",
@@ -90,6 +102,31 @@
           "value": "ON"
         },
         "SOFA_FETCH_SOFA_QT": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
+      "name": "light-gui",
+      "displayName": "Lightweight configuration with GLFW gui",
+      "description": "SOFA as a a small part of the core",
+      "hidden": false,
+      "inherits": ["light"],
+      "cacheVariables": {
+        "SOFA_LIGHT": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "SOFA_WITH_OPENGL": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "SOFA_FETCH_SOFAGLFW": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "PLUGIN_SOFAGLFW": {
           "type": "BOOL",
           "value": "ON"
         }
