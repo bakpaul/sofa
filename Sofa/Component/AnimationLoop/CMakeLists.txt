@@ -6,18 +6,28 @@ set(SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR "src/sofa/component/animationloop")
 set(HEADER_FILES
     ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/config.h.in
     ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/FreeMotionAnimationLoop.h
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/ConstraintAnimationLoop.h
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiStepAnimationLoop.h
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiTagAnimationLoop.h
 )
+
+if(NOT SOFA_LIGHT)
+list(APPEND HEADER_FILES
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/ConstraintAnimationLoop.h
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiStepAnimationLoop.h
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiTagAnimationLoop.h
+)
+endif()
 
 set(SOURCE_FILES
     ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/init.cpp
     ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/FreeMotionAnimationLoop.cpp
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/ConstraintAnimationLoop.cpp
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiStepAnimationLoop.cpp
-    ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiTagAnimationLoop.cpp
 )
+
+if(NOT SOFA_LIGHT)
+    list(APPEND SOURCE_FILES
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/ConstraintAnimationLoop.cpp
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiStepAnimationLoop.cpp
+        ${SOFACOMPONENTANIMATIONLOOP_SOURCE_DIR}/MultiTagAnimationLoop.cpp
+    )
+endif()
 
 sofa_find_package(Sofa.Simulation.Core REQUIRED)
 sofa_find_package(Sofa.Component.Constraint.Lagrangian REQUIRED)

@@ -26,10 +26,13 @@
 namespace sofa::component::animationloop
 {
 
-extern void registerConstraintAnimationLoop(sofa::core::ObjectFactory* factory);
 extern void registerFreeMotionAnimationLoop(sofa::core::ObjectFactory* factory);
+
+#ifndef SOFA_LIGHT
+extern void registerConstraintAnimationLoop(sofa::core::ObjectFactory* factory);
 extern void registerMultiStepAnimationLoop(sofa::core::ObjectFactory* factory);
 extern void registerMultiTagAnimationLoop(sofa::core::ObjectFactory* factory);
+#endif
 
 extern "C" {
     SOFA_EXPORT_DYNAMIC_LIBRARY void initExternalModule();
@@ -55,10 +58,13 @@ const char* getModuleVersion()
 
 void registerObjects(sofa::core::ObjectFactory* factory)
 {
-    registerConstraintAnimationLoop(factory);
     registerFreeMotionAnimationLoop(factory);
+
+#ifndef SOFA_LIGHT
+    registerConstraintAnimationLoop(factory);
     registerMultiStepAnimationLoop(factory);
     registerMultiTagAnimationLoop(factory);
+#endif
 }
 
 void init()
