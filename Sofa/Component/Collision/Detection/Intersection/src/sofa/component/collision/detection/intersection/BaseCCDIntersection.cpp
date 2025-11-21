@@ -48,6 +48,8 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
     SReal maxNormal1DistToNormal = 0;
     SReal maxTangent1DistToNormal = 0;
 
+    //Lighter version would be to use max of dist from 4 points to the corresponding bary, the cylinder will be overestimated but the computation will be way faster
+
     for(const auto id : {0, 2, 4, 6})
     {
         SReal currTangentDistToNormal = dot(points[id] - Cube1MotionEdgeA,Cube1MotionVec);
