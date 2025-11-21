@@ -140,7 +140,7 @@ void RayCollisionModel::computeBoundingTree(int maxDepth)
                     maxElem[c] = o[c] + d[c]*l;
                 }
             }
-            cubeModel->setParentOf(i, minElem, maxElem);
+            cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }

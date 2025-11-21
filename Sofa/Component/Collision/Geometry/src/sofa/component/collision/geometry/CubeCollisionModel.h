@@ -150,7 +150,7 @@ public:
       *the max depth. The division is made along an axis. This axis corresponds to the biggest dimension of the current bounding box.
       *Note : a bounding box is a Cube here.
       */
-    void computeBoundingTree(int maxDepth=0) override;
+    virtual void computeBoundingTree(int maxDepth=0) override;
 
     virtual void computeContinuousBoundingTree(SReal /*dt*/, ContinuousIntersectionTypeFlag continuousIntersectionFlag = ContinuousIntersectionTypeFlag::Inertia, int maxDepth=0);
 

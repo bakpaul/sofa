@@ -245,6 +245,11 @@ void CubeCollisionModel::computeBoundingTree(int maxDepth)
     doComputeBoundingTree(maxDepth);
 }
 
+void CubeCollisionModel::computeContinuousBoundingTree(SReal /*dt*/, ContinuousIntersectionTypeFlag continuousIntersectionFlag , int maxDepth)
+{
+    doComputeBoundingTree(maxDepth, true);
+}
+
 void CubeCollisionModel::doComputeBoundingTree(int maxDepth, bool useContinuous )
 {
 

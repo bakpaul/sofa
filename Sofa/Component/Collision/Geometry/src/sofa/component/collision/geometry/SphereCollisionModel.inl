@@ -185,7 +185,7 @@ void SphereCollisionModel<DataTypes>::computeBoundingTree(int maxDepth)
             const Coord minElem = p.center() - Coord(r,r,r);
             const Coord maxElem = p.center() + Coord(r,r,r);
 
-            cubeModel->setParentOf(i, minElem, maxElem);
+            cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }
@@ -214,7 +214,7 @@ void SphereCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Co
     if (!isMoving() && !cubeModel->empty() && !updated)
         return; // No need to recompute BBox if immobile
 
-    Vec3 minElem, maxElem;
+    type::Vec3 minElem, maxElem, minContinuousElem, maxContinuousElem;
 
     cubeModel->resize(size);
     if (!empty())
@@ -223,19 +223,20 @@ void SphereCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Co
         for (sofa::Size i=0; i<size; i++)
         {
             TSphere<DataTypes> p(this,i);
-            const auto& pt = p.p();
-            const auto ptv = (continuousIntersectionFlag == ContinuousIntersectionTypeFlag::Inertia) ? pt + p.v()*dt : p.pFree();
+            const Vec3& pt = p.p();
+            const Vec3 ptv = (continuousIntersectionFlag == ContinuousIntersectionTypeFlag::Inertia ? pt + p.v()*dt : p.pFree());
+            typename TSphere<DataTypes>::Real r = p.r() + distance;
 
             for (int c = 0; c < 3; c++)
             {
-                minElem[c] = pt[c];
-                maxElem[c] = pt[c];
-                if (ptv[c] > maxElem[c]) maxElem[c] = ptv[c];
-                else if (ptv[c] < minElem[c]) minElem[c] = ptv[c];
+                minElem[c] = pt[c] - r;
+                maxElem[c] = pt[c] + r;
+
+                minContinuousElem[c] = ptv[c] - r;
+                maxContinuousElem[c] = ptv[c] + r;
             }
 
-            typename TSphere<DataTypes>::Real r = p.r() + distance;
-            cubeModel->setParentOf(i, minElem - Vec3(r,r,r), maxElem + Vec3(r,r,r));
+            cubeModel->setParentOf(i, minElem , maxElem, minContinuousElem, maxContinuousElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }
