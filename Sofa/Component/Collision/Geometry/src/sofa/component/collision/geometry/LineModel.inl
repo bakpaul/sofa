@@ -488,7 +488,7 @@ void LineCollisionModel<DataTypes>::computeBoundingTree(int maxDepth)
                 maxElem[c] += distance;
             }
 
-            cubeModel->setParentOf(i, minElem, maxElem);
+            cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }
@@ -503,7 +503,7 @@ void LineCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Cont
     if (!isMoving() && !cubeModel->empty() && !needsUpdate) return; // No need to recompute BBox if immobile
 
     needsUpdate=false;
-    type::Vec3 minElem, maxElem;
+    type::Vec3 minElem, maxElem, minContinuousElem, maxContinuousElem;
 
     cubeModel->resize(size);
     if (!empty())
@@ -524,14 +524,18 @@ void LineCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Cont
                 if (pt2[c] > maxElem[c]) maxElem[c] = pt2[c];
                 else if (pt2[c] < minElem[c]) minElem[c] = pt2[c];
 
-                if (pt1v[c] > maxElem[c]) maxElem[c] = pt1v[c];
-                else if (pt1v[c] < minElem[c]) minElem[c] = pt1v[c];
-                if (pt2v[c] > maxElem[c]) maxElem[c] = pt2v[c];
-                else if (pt2v[c] < minElem[c]) minElem[c] = pt2v[c];
+
+                minContinuousElem[c] = pt1v[c];
+                maxContinuousElem[c] = pt1v[c];
+                if (pt2v[c] > maxContinuousElem[c]) maxContinuousElem[c] = pt2[c];
+                else if (pt2v[c] < minContinuousElem[c]) minContinuousElem[c] = pt2[c];
+
                 minElem[c] -= distance;
                 maxElem[c] += distance;
+                minContinuousElem[c] -= distance;
+                maxContinuousElem[c] += distance;
             }
-            cubeModel->setParentOf(i, minElem, maxElem);
+            cubeModel->setParentOf(i, minElem, maxElem, minContinuousElem, maxContinuousElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }

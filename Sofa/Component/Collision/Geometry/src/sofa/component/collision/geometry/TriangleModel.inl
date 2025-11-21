@@ -267,9 +267,9 @@ void TriangleCollisionModel<DataTypes>::computeBoundingTree(int maxDepth)
             }
 
             if(d_useCurvature.getValue())
-                cubeModel->setParentOf(i, minElem, maxElem, t.n()); // define the bounding box of the current triangle
+                cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem, t.n()); // define the bounding box of the current triangle
             else
-                cubeModel->setParentOf(i, minElem, maxElem);
+                cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }
@@ -288,7 +288,7 @@ void TriangleCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, 
     if (!isMoving() && !cubeModel->empty() && !m_needsUpdate) return; // No need to recompute BBox if immobile nor if mesh didn't change.
 
     m_needsUpdate=false;
-    type::Vec3 minElem, maxElem;
+    type::Vec3 minElem, maxElem, minContinuousElem, maxContinuousElem;
 
     cubeModel->resize(size);
     if (!empty())
@@ -313,15 +313,18 @@ void TriangleCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, 
                 if (pt3[c] > maxElem[c]) maxElem[c] = pt3[c];
                 else if (pt3[c] < minElem[c]) minElem[c] = pt3[c];
 
-                if (pt1v[c] > maxElem[c]) maxElem[c] = pt1v[c];
-                else if (pt1v[c] < minElem[c]) minElem[c] = pt1v[c];
-                if (pt2v[c] > maxElem[c]) maxElem[c] = pt2v[c];
-                else if (pt2v[c] < minElem[c]) minElem[c] = pt2v[c];
-                if (pt3v[c] > maxElem[c]) maxElem[c] = pt3v[c];
-                else if (pt3v[c] < minElem[c]) minElem[c] = pt3v[c];
+
+                minContinuousElem[c] = pt1v[c];
+                maxContinuousElem[c] = pt1v[c];
+                if (pt2v[c] > maxContinuousElem[c]) maxContinuousElem[c] = pt2v[c];
+                else if (pt2v[c] < minContinuousElem[c]) minContinuousElem[c] = pt2v[c];
+                if (pt3v[c] > maxContinuousElem[c]) maxContinuousElem[c] = pt3v[c];
+                else if (pt3v[c] < minContinuousElem[c]) minContinuousElem[c] = pt3v[c];
 
                 minElem[c] -= distance;
                 maxElem[c] += distance;
+                minContinuousElem[c] -= distance;
+                maxContinuousElem[c] += distance;
             }
 
             // Also recompute normal vector
@@ -329,9 +332,9 @@ void TriangleCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, 
             t.n().normalize();
 
             if(d_useCurvature.getValue())
-                cubeModel->setParentOf(i, minElem, maxElem, t.n(), acos(cross(pt2v-pt1v,pt3v-pt1v).normalized() * t.n()));
+                cubeModel->setParentOf(i, minElem, maxElem, minContinuousElem, maxContinuousElem, t.n(), acos(cross(pt2v-pt1v,pt3v-pt1v).normalized() * t.n()));
             else
-                cubeModel->setParentOf(i, minElem, maxElem);
+                cubeModel->setParentOf(i, minElem, maxElem, minContinuousElem, maxContinuousElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }

@@ -121,7 +121,7 @@ void TriangleOctreeCollisionModel::computeBoundingTree(int maxDepth)
 
     }
 
-    cubeModel->setParentOf(0, minElem, maxElem); // define the bounding box of the current triangle
+    cubeModel->setParentOf(0, minElem, maxElem, minElem, maxElem); // define the bounding box of the current triangle
     cubeModel->computeBoundingTree(maxDepth);
     for(sofa::Size i=0; i<size2; i++)
     {

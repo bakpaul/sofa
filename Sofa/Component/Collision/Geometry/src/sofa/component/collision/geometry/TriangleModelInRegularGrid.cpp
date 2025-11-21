@@ -142,7 +142,7 @@ void TriangleModelInRegularGrid::computeBoundingTree ( int )
             t.n().normalize();
         }
 
-        cubeModel->setLeafCube ( 0, std::make_pair ( this->begin(),this->end() ), minElem, maxElem ); // define the bounding box of the current triangle
+        cubeModel->setLeafCube ( 0, std::make_pair ( this->begin(),this->end() ), minElem, maxElem, minElem, maxElem ); // define the bounding box of the current triangle
     }
 }
 

@@ -136,7 +136,9 @@ void PointCollisionModel<DataTypes>::computeBoundingTree(int maxDepth)
         {
             TPoint<DataTypes> p(this,i);
             const type::Vec3& pt = p.p();
-            cubeModel->setParentOf(i, pt - type::Vec3(distance,distance,distance), pt + type::Vec3(distance,distance,distance));
+            const type::Vec3& max = pt - type::Vec3(distance,distance,distance);
+            const type::Vec3& min = pt + type::Vec3(distance,distance,distance);
+            cubeModel->setParentOf(i, min, max, min, max);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }
@@ -157,7 +159,7 @@ void PointCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Con
 
     if (d_computeNormals.getValue()) updateNormals();
 
-    type::Vec3 minElem, maxElem;
+    type::Vec3 minElem, maxElem, minContinuousElem, maxContinuousElem;
 
     cubeModel->resize(size);
     if (!empty())
@@ -174,14 +176,14 @@ void PointCollisionModel<DataTypes>::computeContinuousBoundingTree(SReal dt, Con
 
             for (int c = 0; c < 3; c++)
             {
-                minElem[c] = pt[c];
-                maxElem[c] = pt[c];
-                if (ptv[c] > maxElem[c]) maxElem[c] = ptv[c];
-                else if (ptv[c] < minElem[c]) minElem[c] = ptv[c];
-                minElem[c] -= distance;
-                maxElem[c] += distance;
+                minElem[c] = pt[c] - distance;
+                maxElem[c] = pt[c] + distance;
+
+                minContinuousElem[c] = ptv[c] - distance;
+                maxContinuousElem[c] = ptv[c] + distance;
+
             }
-            cubeModel->setParentOf(i, minElem, maxElem);
+            cubeModel->setParentOf(i, minElem, maxElem, minContinuousElem, maxContinuousElem);
         }
         cubeModel->computeBoundingTree(maxDepth);
     }

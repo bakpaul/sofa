@@ -244,7 +244,7 @@ void TetrahedronCollisionModel::computeBoundingTree(int maxDepth)
                 if (pt1[2] > maxElem[2]) maxElem[2] = pt1[2];
                 else if (pt1[2] < minElem[2]) minElem[2] = pt1[2];
             }
-            cubeModel->setLeafCube(0, std::make_pair(this->begin(),this->end()), minElem, maxElem); // define the bounding box of the current Tetrahedron
+            cubeModel->setLeafCube(0, std::make_pair(this->begin(),this->end()), minElem, maxElem, minElem, maxElem); // define the bounding box of the current Tetrahedron
         }
     }
     else
@@ -270,7 +270,7 @@ void TetrahedronCollisionModel::computeBoundingTree(int maxDepth)
                     if (pt4[c] > maxElem[c]) maxElem[c] = pt4[c];
                     else if (pt4[c] < minElem[c]) minElem[c] = pt4[c];
                 }
-                cubeModel->setParentOf(i, minElem, maxElem); // define the bounding box of the current Tetrahedron
+                cubeModel->setParentOf(i, minElem, maxElem, minElem, maxElem); // define the bounding box of the current Tetrahedron
             }
             cubeModel->computeBoundingTree(maxDepth);
         }
