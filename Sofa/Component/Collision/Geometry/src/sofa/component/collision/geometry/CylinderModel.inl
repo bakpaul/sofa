@@ -161,7 +161,7 @@ void CylinderCollisionModel<DataTypes>::computeBoundingTree(int maxDepth)
                 }
             }
 
-            cubeModel->setParentOf(i, minVec, maxVec);
+            cubeModel->setParentOf(i, minVec, maxVec, minVec, maxVec);
 
         }
         cubeModel->computeBoundingTree(maxDepth);
