@@ -40,15 +40,15 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
 
     const auto alarmDist = currentIntersection->getAlarmDistance() + cube1.getContactDistance() + cube2.getContactDistance();
 
-    const type::Vec3 Cube1MotionEdgeA = (points[2] - points[0]) /2;
-    const type::Vec3 Cube1MotionEdge = (points[6] - points[4])/2 - Cube1MotionEdgeA;
+    //Lighter version would be to use max of dist from 4 points to the corresponding bary, the cylinder will be overestimated but the computation will be way faster
+
+    const type::Vec3 Cube1MotionEdgeA = (points[2] + points[0]) /2;
+    const type::Vec3 Cube1MotionEdge = (points[6] + points[4])/2 - Cube1MotionEdgeA;
     const SReal Cube1MotionEdgeNorm = Cube1MotionEdge.norm();
     const type::Vec3 Cube1MotionVec = Cube1MotionEdge.normalized();
 
     SReal maxNormal1DistToNormal = 0;
     SReal maxTangent1DistToNormal = 0;
-
-    //Lighter version would be to use max of dist from 4 points to the corresponding bary, the cylinder will be overestimated but the computation will be way faster
 
     for(const auto id : {0, 2, 4, 6})
     {
@@ -61,15 +61,15 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
     const auto CorrectedCube1MotionEdge = Cube1MotionEdge + Cube1MotionVec * (maxTangent1DistToNormal + alarmDist);
     const auto CorrectedCube1MotionEdgeA = Cube1MotionEdgeA - Cube1MotionVec * (maxTangent1DistToNormal + alarmDist);
 
-    const type::Vec3 Cube2MotionEdgeA = (points[2] - points[0]) /2;
-    const type::Vec3 Cube2MotionEdge = (points[6] - points[4])/2 - Cube2MotionEdgeA;
+    const type::Vec3 Cube2MotionEdgeA = (points[3] + points[1]) /2;
+    const type::Vec3 Cube2MotionEdge = (points[7] + points[5])/2 - Cube2MotionEdgeA;
     const SReal Cube2MotionEdgeNorm = Cube2MotionEdge.norm();
     const type::Vec3 Cube2MotionVec = Cube2MotionEdge.normalized();
     
     SReal maxNormal2DistToNormal = 0;
     SReal maxTangent2DistToNormal = 0;
 
-    for(const auto id : {0, 2, 4, 6})
+    for(const auto id : {1, 3, 5, 7})
     {
         SReal currTangentDistToNormal = dot(points[id] - Cube2MotionEdgeA,Cube2MotionVec);
         SReal currNormalDistToNormal = (points[id] - Cube2MotionEdgeA - Cube2MotionVec * currTangentDistToNormal).norm();
@@ -88,8 +88,8 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
                                                CorrectedCube2MotionEdgeA ,
                                                CorrectedCube2MotionEdgeA + CorrectedCube2MotionEdge, baryCoords);
 
-    return (   ((1-baryCoords[0]) * CorrectedCube1MotionEdgeA + CorrectedCube1MotionEdgeA + CorrectedCube1MotionEdge)
-             - ((1-baryCoords[1]) * CorrectedCube2MotionEdgeA + CorrectedCube2MotionEdgeA + CorrectedCube2MotionEdge)).norm() < EdgeDist;
+    return (   (baryCoords[0] * CorrectedCube1MotionEdge + CorrectedCube1MotionEdgeA )
+             - (baryCoords[1] * CorrectedCube2MotionEdge + CorrectedCube2MotionEdgeA )).norm() < EdgeDist;
 
 }
 

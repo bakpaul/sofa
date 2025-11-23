@@ -22,7 +22,7 @@
 #pragma once
 #include <sofa/component/collision/detection/intersection/config.h>
 
-#include <sofa/component/collision/detection/intersection/BaseProximityIntersection.h>
+#include <sofa/component/collision/detection/intersection/BaseCCDIntersection.h>
 
 #include <sofa/component/collision/geometry/SphereModel.h>
 #include <sofa/component/collision/geometry/TriangleModel.h>
@@ -55,10 +55,10 @@ namespace sofa::component::collision::detection::intersection
  * - Ray/Line
  */
 class SOFA_COMPONENT_COLLISION_DETECTION_INTERSECTION_API CCDTightInclusionIntersection
-    : public BaseProximityIntersection
+    : public BaseCCDIntersection
 {
    public:
-    SOFA_CLASS(CCDTightInclusionIntersection, BaseProximityIntersection);
+    SOFA_CLASS(CCDTightInclusionIntersection, BaseCCDIntersection);
 
     typedef core::collision::IntersectorFactory<CCDTightInclusionIntersection> IntersectorFactory;
 
