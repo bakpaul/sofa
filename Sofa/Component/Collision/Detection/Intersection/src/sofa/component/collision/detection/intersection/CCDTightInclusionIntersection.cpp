@@ -165,6 +165,7 @@ int CCDTightInclusionIntersection::computeIntersection(Line& e1, Line& e2, Outpu
             <<" not activated" ;
         return 0;
     }
+    ++ m_edgeEdgeDetection;
 
     const Eigen::Map<Eigen::Vector3<SReal>> Line1ABegin(const_cast<double*>(e1.p1().elems.data()));
     const Eigen::Map<Eigen::Vector3<SReal>> Line1AEnd(const_cast<double*>(e1.p1Free().elems.data()));
@@ -254,6 +255,7 @@ int CCDTightInclusionIntersection::computeIntersection(Triangle& triangle, Point
             <<" not activated" ;
         return 0;
     }
+    ++ m_trianglePointDetection;
     const Eigen::Map<Eigen::Vector3<SReal>> TriangleABegin(const_cast<double*>(triangle.p1().elems.data()));
     const Eigen::Map<Eigen::Vector3<SReal>> TriangleAEnd(const_cast<double*>(triangle.p1Free().elems.data()));
     const Eigen::Map<Eigen::Vector3<SReal>> TriangleBBegin(const_cast<double*>(triangle.p2().elems.data()));

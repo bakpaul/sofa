@@ -35,61 +35,37 @@ BaseCCDIntersection::BaseCCDIntersection()
 
 bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core::collision::Intersection* currentIntersection)
 {
-    const std::array<type::Vec3, 8> points{cube1.minVect(),           cube2.minVect(),           cube1.maxVect(),           cube2.maxVect(),
-                                           cube1.continuousMinVect(), cube2.continuousMinVect(), cube1.continuousMaxVect(), cube2.continuousMaxVect()};
-
     const auto alarmDist = currentIntersection->getAlarmDistance() + cube1.getContactDistance() + cube2.getContactDistance();
 
-    //Lighter version would be to use max of dist from 4 points to the corresponding bary, the cylinder will be overestimated but the computation will be way faster
+    const type::Vec3 Cube1MotionEdgeA = (cube1.maxVect()           + cube1.minVect())/2;
+    const type::Vec3 Cube1MotionEdgeB = (cube1.continuousMaxVect() + cube1.continuousMinVect())/2;
+    const type::Vec3 Cube1MotionEdge  = Cube1MotionEdgeB - Cube1MotionEdgeA;
+    const SReal Cube1MaxDist          = fmax((cube1.maxVect() - cube1.minVect()).norm()/2,(cube1.continuousMaxVect() - cube1.continuousMinVect()).norm()/2 );
 
-    const type::Vec3 Cube1MotionEdgeA = (points[2] + points[0]) /2;
-    const type::Vec3 Cube1MotionEdge = (points[6] + points[4])/2 - Cube1MotionEdgeA;
-    const SReal Cube1MotionEdgeNorm = Cube1MotionEdge.norm();
-    const type::Vec3 Cube1MotionVec = Cube1MotionEdge.normalized();
+    const type::Vec3 Cube2MotionEdgeA = (cube2.maxVect()           + cube2.minVect())/2;
+    const type::Vec3 Cube2MotionEdgeB = (cube2.continuousMaxVect() + cube2.continuousMinVect())/2;
+    const type::Vec3 Cube2MotionEdge  = Cube2MotionEdgeB - Cube2MotionEdgeA;
+    const SReal Cube2MaxDist          = fmax((cube2.maxVect() - cube2.minVect()).norm()/2,(cube2.continuousMaxVect() - cube2.continuousMinVect()).norm()/2 );
 
-    SReal maxNormal1DistToNormal = 0;
-    SReal maxTangent1DistToNormal = 0;
 
-    for(const auto id : {0, 2, 4, 6})
-    {
-        SReal currTangentDistToNormal = dot(points[id] - Cube1MotionEdgeA,Cube1MotionVec);
-        SReal currNormalDistToNormal = (points[id] - Cube1MotionEdgeA - Cube1MotionVec * currTangentDistToNormal).norm();
-        currTangentDistToNormal = (currTangentDistToNormal < Cube1MotionEdgeNorm && currTangentDistToNormal > 0) ? 0 : currTangentDistToNormal - Cube1MotionEdgeNorm;
-        maxNormal1DistToNormal = currNormalDistToNormal > maxNormal1DistToNormal ? currNormalDistToNormal : maxNormal1DistToNormal;
-        maxTangent1DistToNormal = currTangentDistToNormal > maxTangent1DistToNormal ? currTangentDistToNormal : maxTangent1DistToNormal;
-    }
-    const auto CorrectedCube1MotionEdge = Cube1MotionEdge + Cube1MotionVec * (maxTangent1DistToNormal + alarmDist);
-    const auto CorrectedCube1MotionEdgeA = Cube1MotionEdgeA - Cube1MotionVec * (maxTangent1DistToNormal + alarmDist);
-
-    const type::Vec3 Cube2MotionEdgeA = (points[3] + points[1]) /2;
-    const type::Vec3 Cube2MotionEdge = (points[7] + points[5])/2 - Cube2MotionEdgeA;
-    const SReal Cube2MotionEdgeNorm = Cube2MotionEdge.norm();
-    const type::Vec3 Cube2MotionVec = Cube2MotionEdge.normalized();
-    
-    SReal maxNormal2DistToNormal = 0;
-    SReal maxTangent2DistToNormal = 0;
-
-    for(const auto id : {1, 3, 5, 7})
-    {
-        SReal currTangentDistToNormal = dot(points[id] - Cube2MotionEdgeA,Cube2MotionVec);
-        SReal currNormalDistToNormal = (points[id] - Cube2MotionEdgeA - Cube2MotionVec * currTangentDistToNormal).norm();
-        currTangentDistToNormal = (currTangentDistToNormal < Cube2MotionEdgeNorm && currTangentDistToNormal > 0) ? 0 : currTangentDistToNormal - Cube2MotionEdgeNorm;
-        maxNormal2DistToNormal = currNormalDistToNormal > maxNormal2DistToNormal ? currNormalDistToNormal : maxNormal2DistToNormal;
-        maxTangent2DistToNormal = currTangentDistToNormal > maxTangent2DistToNormal ? currTangentDistToNormal : maxTangent2DistToNormal;
-    }
-    const auto CorrectedCube2MotionEdge = Cube2MotionEdge + Cube2MotionVec * (maxTangent2DistToNormal + alarmDist);
-    const auto CorrectedCube2MotionEdgeA = Cube2MotionEdgeA - Cube2MotionVec * (maxTangent2DistToNormal + alarmDist);
-
-    const SReal EdgeDist = maxNormal1DistToNormal + maxNormal2DistToNormal + alarmDist;
+    const SReal EdgeDist = Cube1MaxDist + Cube2MaxDist + alarmDist;
 
     type::Vec2 baryCoords(type::NOINIT);
-    sofa::geometry::Edge::closestPointWithEdge(CorrectedCube1MotionEdgeA ,
-                                               CorrectedCube1MotionEdgeA + CorrectedCube1MotionEdge,
-                                               CorrectedCube2MotionEdgeA ,
-                                               CorrectedCube2MotionEdgeA + CorrectedCube2MotionEdge, baryCoords);
+    sofa::geometry::Edge::closestPointWithEdge(Cube1MotionEdgeA,
+                                               Cube1MotionEdgeB,
+                                               Cube2MotionEdgeA,
+                                               Cube2MotionEdgeB, baryCoords);
 
-    return (   (baryCoords[0] * CorrectedCube1MotionEdge + CorrectedCube1MotionEdgeA )
-             - (baryCoords[1] * CorrectedCube2MotionEdge + CorrectedCube2MotionEdgeA )).norm() < EdgeDist;
+    std::cout<<"Cube1 pose diag : "<<(cube1.maxVect() - cube1.minVect()).norm()/2<<std::endl;
+    std::cout<<"Cube1 free diag : "<<(cube1.continuousMaxVect() - cube1.continuousMinVect()).norm()/2<<std::endl;
+    std::cout<<"Cube1MaxDist : "<<Cube1MaxDist<<std::endl;
+    std::cout<<"Cube2MaxDist : "<<Cube2MaxDist<<std::endl;
+    std::cout<<"CurrentDist : "<<(   (Cube1MotionEdgeA + baryCoords[0] * Cube1MotionEdge )
+                                      - (Cube2MotionEdgeA + baryCoords[1] * Cube2MotionEdge )).norm()<<std::endl;
+
+
+    return (   (Cube1MotionEdgeA + baryCoords[0] * Cube1MotionEdge )
+             - (Cube2MotionEdgeA + baryCoords[1] * Cube2MotionEdge )).norm() < EdgeDist;
 
 }
 

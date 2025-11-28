@@ -30,6 +30,8 @@
 #include <sofa/component/collision/geometry/PointModel.h>
 #include <sofa/component/collision/geometry/CubeModel.h>
 #include <sofa/component/collision/geometry/RayModel.h>
+#include <sofa/simulation/AnimateBeginEvent.h>
+#include <sofa/simulation/AnimateEndEvent.h>
 
 namespace sofa::component::collision::detection::intersection
 {
@@ -116,9 +118,26 @@ class SOFA_COMPONENT_COLLISION_DETECTION_INTERSECTION_API CCDTightInclusionInter
     // computeIntersection(collision::geometry::Ray&, collision::geometry::Triangle&, OutputVector*,
     // const core::collision::Intersection* currentIntersection);
 
+    virtual void handleEvent( core::objectmodel::Event* event ) override
+    {
+        if(dynamic_cast<sofa::simulation::AnimateBeginEvent*>(event))
+        {
+            m_edgeEdgeDetection = 0;
+            m_trianglePointDetection = 0;
+        }
+        else if(dynamic_cast<sofa::simulation::AnimateEndEvent*>(event))
+        {
+            std::cout << "t = " << this->getContext()->getTime()<< ", Edge/Edge      detection: " << m_edgeEdgeDetection<<std::endl;
+            std::cout << "t = " << this->getContext()->getTime()<< ", Triangle/Point detection: " << m_trianglePointDetection<<std::endl;
+        }
+    }
 
     Data<sofa::helper::OptionsGroup> d_continuousCollisionType;
     Data<SReal> d_tolerance;
     Data<long> d_maxIterations;
+
+   private:
+    long m_trianglePointDetection;
+    long m_edgeEdgeDetection;
 };
 } // namespace sofa::component::collision::detection::intersection
