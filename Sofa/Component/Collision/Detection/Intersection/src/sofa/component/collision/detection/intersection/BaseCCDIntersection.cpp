@@ -21,6 +21,8 @@
 ******************************************************************************/
 #include <sofa/component/collision/detection/intersection/BaseCCDIntersection.h>
 
+#include "sofa/type/vector_algebra.h"
+
 namespace sofa::component::collision::detection::intersection
 {
 
@@ -56,12 +58,30 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
                                                Cube2MotionEdgeA,
                                                Cube2MotionEdgeB, baryCoords);
 
-    std::cout<<"Cube1 pose diag : "<<(cube1.maxVect() - cube1.minVect()).norm()/2<<std::endl;
-    std::cout<<"Cube1 free diag : "<<(cube1.continuousMaxVect() - cube1.continuousMinVect()).norm()/2<<std::endl;
-    std::cout<<"Cube1MaxDist : "<<Cube1MaxDist<<std::endl;
-    std::cout<<"Cube2MaxDist : "<<Cube2MaxDist<<std::endl;
+
+    double v1v2 = dot(Cube2MotionEdge, Cube1MotionEdge);
+    type::Vec3 A1A2 = Cube1MotionEdgeA - Cube2MotionEdgeA;
+    double det =  1 - v1v2 * v1v2;
+    std::array<double,2> b = {-dot(Cube1MotionEdge, A1A2), dot(Cube2MotionEdge, A1A2) };
+    baryCoords[0] = (dot(Cube1MotionEdge,Cube1MotionEdge) * b[0] + v1v2 * b[1])/det;
+    baryCoords[1] = (v1v2 * b[0]                                 + dot(Cube2MotionEdge,Cube2MotionEdge) * b[1])/det;
+
+
+    if (baryCoords[0] < 0) baryCoords[0] = 0;
+    if (baryCoords[0] > 1) baryCoords[0] = 1;
+    if (baryCoords[1] < 0) baryCoords[1] = 0;
+    if (baryCoords[1] > 1) baryCoords[1] = 1;
+
+    std::cout<<"BaryCoord : "<<baryCoords<<std::endl;
+    std::cout<<"Cube1 Edge length : "<<(Cube1MotionEdge).norm()<<std::endl;
+    std::cout<<"Cube1MotionEdgeA : "<<(Cube1MotionEdgeA)<<std::endl;
+    std::cout<<"Cube1MotionEdgeB : "<<(Cube1MotionEdgeB)<<std::endl;
+    std::cout<<"Cube2 Edge length : "<<(Cube2MotionEdge).norm()<<std::endl;
+    std::cout<<"Cube2MotionEdgeA : "<<(Cube2MotionEdgeA)<<std::endl;
+    std::cout<<"Cube2MotionEdgeB : "<<(Cube2MotionEdgeB)<<std::endl;
+    std::cout<<"EdgeDist : "<<EdgeDist<<std::endl;
     std::cout<<"CurrentDist : "<<(   (Cube1MotionEdgeA + baryCoords[0] * Cube1MotionEdge )
-                                      - (Cube2MotionEdgeA + baryCoords[1] * Cube2MotionEdge )).norm()<<std::endl;
+                                      - (Cube2MotionEdgeA + baryCoords[1] * Cube2MotionEdge )).norm()<<std::endl<<std::endl;
 
 
     return (   (Cube1MotionEdgeA + baryCoords[0] * Cube1MotionEdge )

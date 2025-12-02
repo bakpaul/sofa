@@ -70,7 +70,7 @@ CCDTightInclusionIntersection::CCDTightInclusionIntersection()
 
 void CCDTightInclusionIntersection::init()
 {
-    intersectors.add<CubeCollisionModel, CubeCollisionModel, CCDTightInclusionIntersection>(this);
+    intersectors.add<CubeCollisionModel, CubeCollisionModel, BaseCCDIntersection>(this);
     intersectors.add<LineCollisionModel<sofa::defaulttype::Vec3Types>, LineCollisionModel<sofa::defaulttype::Vec3Types>, CCDTightInclusionIntersection>(this);
     intersectors.add<TriangleCollisionModel<sofa::defaulttype::Vec3Types>, PointCollisionModel<sofa::defaulttype::Vec3Types>, CCDTightInclusionIntersection>(this);
 
@@ -114,15 +114,6 @@ core::CollisionModel::ContinuousIntersectionTypeFlag CCDTightInclusionIntersecti
 
 
 
-bool CCDTightInclusionIntersection::testIntersection(Cube &cube1, Cube &cube2, const core::collision::Intersection* currentIntersection)
-{
-    return Inherit1::testIntersection(cube1, cube2, currentIntersection);
-}
-
-int CCDTightInclusionIntersection::computeIntersection(Cube&, Cube&, OutputVector* /*contacts*/, const core::collision::Intersection* )
-{
-    return 0; /// \todo
-}
 
 bool CCDTightInclusionIntersection::testIntersection(Line& e1, Line& e2, const core::collision::Intersection* currentIntersection)
 {

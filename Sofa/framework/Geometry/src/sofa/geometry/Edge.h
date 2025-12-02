@@ -224,7 +224,7 @@ struct Edge
         typename T = std::decay_t<decltype(*std::begin(std::declval<Node>()))>,
         typename = std::enable_if_t<std::is_scalar_v<T>>
     >
-    static constexpr void closestPointWithEdge(const Node& pA, const Node& pB, const Node& pC, const Node& pD, sofa::type::Vec<2, T>& intersectionBaryCoord)
+    static constexpr void   closestPointWithEdge(const Node& pA, const Node& pB, const Node& pC, const Node& pD, sofa::type::Vec<2, T>& intersectionBaryCoord)
     {
         // The 2 segment equations using pX on edge1 and pY on edge2 can be defined by:
         // pX = pA + alpha (pB - pA)
