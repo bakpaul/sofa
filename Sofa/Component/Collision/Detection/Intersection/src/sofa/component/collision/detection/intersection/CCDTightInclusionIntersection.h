@@ -73,10 +73,6 @@ class SOFA_COMPONENT_COLLISION_DETECTION_INTERSECTION_API CCDTightInclusionInter
     virtual bool useContinuous() const override;
     virtual core::CollisionModel::ContinuousIntersectionTypeFlag continuousIntersectionType() const;
 
-
-    bool testIntersection(collision::geometry::Cube&, collision::geometry::Cube&,
-                          const core::collision::Intersection* currentIntersection) override;
-
     // bool testIntersection(collision::geometry::Point&, collision::geometry::Point&, const
     // core::collision::Intersection* currentIntersection); bool
     // testIntersection(collision::geometry::Sphere&, collision::geometry::Point&, const
@@ -94,8 +90,6 @@ class SOFA_COMPONENT_COLLISION_DETECTION_INTERSECTION_API CCDTightInclusionInter
     // int testIntersection(collision::geometry::Triangle&, collision::geometry::Sphere&, const
     // core::collision::Intersection* currentIntersection);
 
-    int computeIntersection(collision::geometry::Cube&, collision::geometry::Cube&, OutputVector*,
-                            const core::collision::Intersection* currentIntersection) override;
     // int computeIntersection(collision::geometry::Point&, collision::geometry::Point&,
     // OutputVector*, const core::collision::Intersection* currentIntersection); int
     // computeIntersection(collision::geometry::Sphere&, collision::geometry::Point&, OutputVector*,
