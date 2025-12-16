@@ -32,7 +32,10 @@ double projectPointToEdge(const type::Vec3& point, const type::Vec3& edgeA, cons
 {
     const auto v = edgeB - edgeA;
     const double vnorm = v.norm();
-    return type::dot(v,point - edgeA)/(vnorm * vnorm);
+    double bary = dot(point - edgeA,v) / (vnorm * vnorm);
+    if ( bary > 1 ) bary = 1;
+    if ( bary < 0 ) bary = 0;
+    return bary;
 }
 
 
@@ -45,37 +48,64 @@ BaseCCDIntersection::BaseCCDIntersection()
 
 bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core::collision::Intersection* currentIntersection)
 {
+
+
+
     const auto alarmDist = currentIntersection->getAlarmDistance() + cube1.getContactDistance() + cube2.getContactDistance();
 
     const type::Vec3 Cube1MotionEdgeA = (cube1.maxVect()           + cube1.minVect())/2;
     const type::Vec3 Cube1MotionEdgeB = (cube1.continuousMaxVect() + cube1.continuousMinVect())/2;
     const type::Vec3 Cube1MotionEdge  = Cube1MotionEdgeB - Cube1MotionEdgeA;
-    const SReal Cube1MaxDist          = fmax((cube1.maxVect() - cube1.minVect()).norm()/2,(cube1.continuousMaxVect() - cube1.continuousMinVect()).norm()/2 );
+    const double normal1normSqrd = dot(Cube1MotionEdge,Cube1MotionEdge);
+    const double normal1norm = sqrt(normal1normSqrd);
 
     const type::Vec3 Cube2MotionEdgeA = (cube2.maxVect()           + cube2.minVect())/2;
     const type::Vec3 Cube2MotionEdgeB = (cube2.continuousMaxVect() + cube2.continuousMinVect())/2;
     const type::Vec3 Cube2MotionEdge  = Cube2MotionEdgeB - Cube2MotionEdgeA;
-    const SReal Cube2MaxDist          = fmax((cube2.maxVect() - cube2.minVect()).norm()/2,(cube2.continuousMaxVect() - cube2.continuousMinVect()).norm()/2 );
+    const double normal2normSqrd = dot(Cube2MotionEdge,Cube2MotionEdge);
+    const double normal2norm = sqrt(normal2normSqrd);
 
+    const SReal Cube1MaxDist          = fmax((cube1.maxVect() - cube1.minVect()).norm()/2,(cube1.continuousMaxVect() - cube1.continuousMinVect()).norm()/2 );
+    const SReal Cube2MaxDist          = fmax((cube2.maxVect() - cube2.minVect()).norm()/2,(cube2.continuousMaxVect() - cube2.continuousMinVect()).norm()/2 );
 
     const SReal EdgeDist = Cube1MaxDist + Cube2MaxDist + alarmDist;
 
+    if (normal1norm < std::numeric_limits<double>::epsilon() && normal2norm < std::numeric_limits<double>::epsilon())
+    {
+        const double dist = (Cube1MotionEdgeA - Cube2MotionEdgeA).norm();
+        return dist<EdgeDist;
+    }
+    else if (normal1norm < std::numeric_limits<double>::epsilon())
+    {
+        const double bary = projectPointToEdge(Cube1MotionEdgeA, Cube2MotionEdgeA, Cube2MotionEdgeB );
+        const double dist = (   Cube1MotionEdgeA - (Cube2MotionEdgeA + bary * Cube2MotionEdge )).norm();
+        return dist<EdgeDist;
+    }
+    else if (normal2norm < std::numeric_limits<double>::epsilon())
+    {
+        const double bary = projectPointToEdge(Cube2MotionEdgeA, Cube1MotionEdgeA, Cube1MotionEdgeB );
+        const double dist = (   Cube2MotionEdgeA - (Cube1MotionEdgeA + bary * Cube1MotionEdge )).norm();
+        return dist<EdgeDist;
+    }
+    
     type::Vec2 baryCoords(type::NOINIT);
+
 
     double v1v2 = dot(Cube2MotionEdge, Cube1MotionEdge);
     type::Vec3 A1A2 = Cube1MotionEdgeA - Cube2MotionEdgeA;
-    double det =  1 - v1v2 * v1v2;
-    std::array<double,2> b = {-dot(Cube1MotionEdge, A1A2), dot(Cube2MotionEdge, A1A2) };
-    baryCoords[0] = (dot(Cube1MotionEdge,Cube1MotionEdge) * b[0] + v1v2 * b[1])/det;
-    baryCoords[1] = (v1v2 * b[0]                                 + dot(Cube2MotionEdge,Cube2MotionEdge) * b[1])/det;
+    double det =  - normal1normSqrd*normal2normSqrd + v1v2 * v1v2;
+    std::array<double,2> b = {-dot(Cube1MotionEdge, A1A2), -dot(Cube2MotionEdge, A1A2) };
+    baryCoords[0] = (normal2normSqrd * b[0] + v1v2 * b[1])/det;
+    baryCoords[1] = (-v1v2 * b[0]            - normal1normSqrd * b[1])/det;
 
-    bool projectFirst = (baryCoords[0] < 0) || (baryCoords[0] > 1);
-    bool projectSecond = (baryCoords[1] < 0) || (baryCoords[1] > 1);
+    const bool projectFirst = (baryCoords[0] < 0) || (baryCoords[0] > 1);
+    const bool projectSecond = (baryCoords[1] < 0) || (baryCoords[1] > 1);
 
     if (baryCoords[0] < 0) baryCoords[0] = 0;
     if (baryCoords[0] > 1) baryCoords[0] = 1;
     if (baryCoords[1] < 0) baryCoords[1] = 0;
     if (baryCoords[1] > 1) baryCoords[1] = 1;
+
 
     if (projectFirst || projectSecond)
     {
@@ -85,13 +115,7 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
         if (projectFirst && projectSecond)
         {
             double newFirstBary = projectPointToEdge(oldSecondPoint, Cube1MotionEdgeA, Cube1MotionEdgeB);
-            if ( newFirstBary > 1 ) newFirstBary = 1;
-            if ( newFirstBary < 1 ) newFirstBary = 0;
-
             double newSecondBary = projectPointToEdge(oldFirstPoint, Cube2MotionEdgeA, Cube2MotionEdgeB);
-            if ( newSecondBary > 1 ) newSecondBary = 1;
-            if ( newSecondBary < 1 ) newSecondBary = 0;
-
             if (  ((1-newSecondBary) * Cube2MotionEdgeA + newSecondBary * Cube2MotionEdgeB - oldFirstPoint ).norm()
                 < ((1-newFirstBary ) * Cube1MotionEdgeA + newFirstBary  * Cube1MotionEdgeB - oldSecondPoint ).norm())
             {
@@ -105,8 +129,6 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
         else if (projectFirst)
         {
             double newSecondBary = projectPointToEdge(oldFirstPoint, Cube2MotionEdgeA, Cube2MotionEdgeB);
-            if ( newSecondBary > 1 ) newSecondBary = 1;
-            if ( newSecondBary < 1 ) newSecondBary = 0;
             if (  ((1-newSecondBary) * Cube2MotionEdgeA + newSecondBary * Cube2MotionEdgeB - oldFirstPoint ).norm()
                 < (oldFirstPoint - oldSecondPoint).norm())
             {
@@ -116,8 +138,6 @@ bool BaseCCDIntersection::testIntersection(Cube& cube1, Cube& cube2, const core:
         else if (projectSecond)
         {
             double newFirstBary = projectPointToEdge(oldSecondPoint, Cube1MotionEdgeA, Cube1MotionEdgeB);
-            if ( newFirstBary > 1 ) newFirstBary = 1;
-            if ( newFirstBary < 1 ) newFirstBary = 0;
             if (  ((1-newFirstBary) * Cube1MotionEdgeA + newFirstBary * Cube1MotionEdgeB - oldSecondPoint ).norm()
                 < (oldFirstPoint - oldSecondPoint).norm())
             {
