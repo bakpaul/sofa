@@ -83,15 +83,15 @@ jobs:
             echo "builder-os : ${{ inputs.builder-os }}"
 
   sofa-pixi:
-    name: ${{ matrix.os }} - Env ${{ matrix.environment }} ${{ matrix.build_type }} ${{ matrix.compiler }}
-    runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
         os: ${{ fromJson(inputs.builder-os) }}
         environment: ${{ fromJson(inputs.preset) }}
         build_type: [Release]
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - Env ${{ matrix.environment }} ${{ matrix.build_type }} ${{ matrix.compiler }}
+
 
     steps:
       - uses: actions/checkout@v4
