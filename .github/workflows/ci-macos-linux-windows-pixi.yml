@@ -1,15 +1,88 @@
 name: CI - MacOS/Linux/Windows via Pixi
 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      sofa-branch-name:
+        type: string
+        required: true
+      sofa-commit-sha:
+        type: string
+        required: true
+      pr-owner-url:
+        type: string
+        required: false
+      pr-branch-name:
+        type: string
+        required: false
+      pr-commit-sha:
+        type: string
+        required: false
+      preset:
+        type: string
+        required: true
+      python-version:
+        type: string
+        required: true
+      ci-depends-on:
+        type: string
+        required: false
+      with-all-tests:
+        type: boolean
+        required: false
+        default: false
+      force-full-build:
+        type: boolean
+        required: false
+        default: false
+      generate-binaries:
+        type: boolean
+        required: false
+        default: false
+      external-plugins:
+        type: string
+        required: false
+      additionnal-cmake-flags:
+        type: string
+        required: false
+      builder-os:
+        type: string
+        required: true
+        default: '["ubuntu-latest", "macos-latest", "macos-15-intel", "windows-latest"]'
+      dash-info:
+        type: string
+        required: false
+        default: 'NONE'
+        description: 'Json scructure with three parameters {"COMMIT_HASH":"fullhsashofthecommit", }'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+
 jobs:
+  display-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display
+        shell: bash
+        run: |
+            echo "Build and test launched with following parameters:"
+            echo "sofa-branch-name : ${{ inputs.sofa-branch-name }}"
+            echo "sofa-commit-sha : ${{ inputs.sofa-commit-sha }}"
+            echo "pr-owner-url : ${{ inputs.pr-owner-url }}"
+            echo "pr-branch-name : ${{ inputs.pr-branch-name }}"
+            echo "pr-commit-sha : ${{ inputs.pr-commit-sha }}"
+            echo "preset : ${{ inputs.preset }}"
+            echo "python-version : ${{ inputs.python-version }}"
+            echo "ci-depends-on : ${{ inputs.ci-depends-on }}"
+            echo "with-all-tests : ${{ inputs.with-all-tests }}"
+            echo "force-full-build : ${{ inputs.force-full-build }}"
+            echo "generate-binaries : ${{ inputs.generate-binaries }}"
+            echo "external-plugins : ${{ inputs.external-plugins }}"
+            echo "additionnal-cmake-flags : ${{ inputs.additionnal-cmake-flags }}"
+            echo "builder-os : ${{ inputs.builder-os }}"
+
   sofa-pixi:
     name: ${{ matrix.os }} - Env ${{ matrix.environment }} ${{ matrix.build_type }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
@@ -17,24 +90,129 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
-        environment: [supported-plugins]
+        os: ${{ fromJson(inputs.builder-os) }}
+        environment: ${{ fromJson(inputs.preset) }}
         build_type: [Release]
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sofa-branch-name }}
+          path: sofa
+
+      - run: git config --global user.email "<>"
+      - run: git config --global user.name "SOFA Bot"
 
       - uses: prefix-dev/setup-pixi@v0.8.10
         with:
           cache: false
           environments: ${{ matrix.environment }}
 
+      - name: Setup SOFA and clone CI
+        shell: bash -el {0}
+        run: |
+          export WORKSPACE=$GITHUB_WORKSPACE
+          echo "WORKSPACE=$WORKSPACE" >> $GITHUB_ENV
+
+          export SRC_DIR=$GITHUB_WORKSPACE/sofa
+          echo "SRC_DIR=$SRC_DIR" >> $GITHUB_ENV
+
+          cd $SRC_DIR
+          if [ ! -z "${{ inputs.pr-owner-url }}" ]; then
+              echo "This is a PR, merging branch ${{ inputs.pr-branch-name }} from remote ${{ inputs.pr-owner-url }} into origin branch ${{ inputs.sofa-branch-name }}"
+              git remote add pr ${{ inputs.pr-owner-url }}
+              git fetch pr 
+              
+              if [ "${{ inputs.pr-commit-sha }}" == "HEAD" ]; then
+                  git merge ${{ inputs.pr-branch-name }}
+              else
+                  git merge ${{ inputs.pr-commit-sha }}
+              fi
+          else
+              echo "This is not a PR: checking out sha ${{ inputs.sofa-commit-sha }} from branch ${{ inputs.sofa-branch-name }}"
+              git checkout ${{ inputs.sofa-commit-sha }}
+          fi
+
+          cd $WORKSPACE
+ 
+          ## Clone CI and use ci-depends-on structure
+          ci_branch=${{ inputs.sofa-branch-name }}
+          ci_repo_url="https://www.github.com/sofa-framework/ci"
+           
+
+          # check if ci has a ci-depends-on 
+          ci_ci_depends_on=$(echo "${{ inputs.ci-depends-on }}" | jq .ci)
+          if [ -n "${{ inputs.ci-depends-on }}" ] && [ "$ci_ci_depends_on" != "null" ]; then
+              echo "ci-depends-on for ci repository detected."
+              ci_repo_url=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.repo_url)
+              ci_branch=$(echo "${{ inputs.ci-depends-on }}" | jq .ci.branch_name)
+          fi
+          echo "CI_BRANCH=$ci_branch" >> $GITHUB_ENV
+
+
+          echo "Cloning CI from remote ${ci_repo_url}, selecting branch ${ci_branch}"
+
+          CI_DIR=$WORKSPACE/ci
+          echo "CI_DIR=$CI_DIR" >> $GITHUB_ENV
+
+          git clone -b ${ci_branch//\"} --single-branch ${ci_repo_url//\"}
+
+          cd $WORKSPACE
+
+          ## Setup build folder
+          mkdir $WORKSPACE/build
+
+          SOFA_BUILD_DIR=$WORKSPACE/build
+          echo "SOFA_BUILD_DIR=$SOFA_BUILD_DIR" >> $GITHUB_ENV
+
+          if [ -n "${{ inputs.external-plugins }}" ]; then
+              echo "Setting up external plugins."
+              for plugin in ${{ inputs.external-plugins }}; do
+                  plugin_base=${plugin%@*}
+                  plugin_branch=${plugin##*@}
+                  plugin_repo=$(basename "$plugin_base")
+
+                  echo "Adding line 'sofa_add_external(plugin $plugin_repo GIT_REF $plugin_branch GIT_REPOSITORY $plugin_base ON)' to file ${SRC_DIR}/applications/CMakeLists.txt"
+                  echo "sofa_add_external(plugin $plugin_repo GIT_REF $plugin_branch GIT_REPOSITORY $plugin_base ON)" >> "${SRC_DIR}/applications/CMakeLists.txt"
+              done
+          fi
+  
+
+
       - name: Build SOFA [MacOS/Linux/Windows]
         shell: bash -el {0}
         env:
           SOFA_BUILD_TYPE: ${{ matrix.build_type }}
         run: |
-          pixi run -e ${{ matrix.environment }} build
+          cd ${SRC_DIR}
+
+          
+          ## Deal with ci-depends-on
+          # Loop over each key-value pair in the JSON avoiding ci repository if inside
+          CMAKE_OPTIONS="${{inputs.additionnal-cmake-flags}}"
+          for key in $(echo "${{ inputs.ci-depends-on }}" | jq -r 'keys[]' | grep -v '^ci$'); do
+
+            repo_url=$(echo "${{ inputs.ci-depends-on }}" | jq -r ".\"$key\".repo_url")
+            branch_name=$(echo "${{ inputs.ci-depends-on }}" | jq -r ".\"$key\".branch_name")
+
+            # Format the CMake flags for this key and append to the result
+            fixed_name=$(echo "$key" |  awk '{gsub(/\./, "_"); print toupper($0)}')
+            flag_repository="-D${fixed_name}_GIT_REPOSITORY=\"$repo_url\""
+            flag_tag="-D${fixed_name}_GIT_TAG=\"$branch_name\""
+
+            # Append both flags to the result string with a space
+            CMAKE_OPTIONS="$CMAKE_OPTIONS $flag_repository $flag_tag "
+          done
+
+          if [[ ! -n "$CMAKE_OPTIONS" ]]; then
+              echo "No ci-depends-on detected."
+          else
+              echo "Adding the following cmake variable : $CMAKE_OPTIONS"
+          fi
+
+          ## Run build step
+          pixi run -e ${{ matrix.environment }} configure $CMAKE_OPTIONS
+          pixi run -e ${{ matrix.environment }} build 
 
       - name: Testing - Run SOFA in batch mode [MacOS/Linux/Windows]
         shell: bash -el {0}
