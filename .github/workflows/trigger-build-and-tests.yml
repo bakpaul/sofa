@@ -231,7 +231,7 @@ jobs:
   # Trigger the build and sharing all parameters from filter_build > outputs
   build-on:
     needs: filter_build
-    if: ${{ github.repository_owner == 'bakpaul' && needs.filter_build.outputs.SH_BUILDER_OS != '[]' }}
+    if: ${{ github.repository_owner == 'sofa-framework' && needs.filter_build.outputs.SH_BUILDER_OS != '[]' }}
     uses: bakpaul/sofa/.github/workflows/build-and-test.yml@master
     with:
       sofa-branch-name: ${{ needs.filter_build.outputs.SOFA_BRANCH_NAME }}

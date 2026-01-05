@@ -59,7 +59,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
   display-inputs:
     runs-on: ubuntu-latest
