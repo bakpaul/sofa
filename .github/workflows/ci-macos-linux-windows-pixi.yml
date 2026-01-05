@@ -183,9 +183,9 @@ jobs:
         env:
           SOFA_BUILD_TYPE: ${{ matrix.build_type }}
         run: |
-          cd ${SRC_DIR}
+          cd ${SRC_DIR} 
 
-          
+           
           ## Deal with ci-depends-on
           # Loop over each key-value pair in the JSON avoiding ci repository if inside
           CMAKE_OPTIONS="${{inputs.additionnal-cmake-flags}}"
