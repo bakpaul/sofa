@@ -70,6 +70,28 @@ check-all-deps() {
     mode="$1"
     pass="$2"
 
+    # Define library patterns as an array of "pattern|extraction_regex|type"
+    # Format: "search_pattern|extract_regex|type"
+    # type can be: "framework" or "regular"
+    declare -a lib_patterns=(
+        "Qt|/Qt[A-Za-z]*$|framework"
+        "Python|/Python.framework.*|framework"
+        "libboost|/libboost_[^/]*?\.dylib|regular"
+        "libicu|/libicu[^/]*?\.dylib$|regular"
+        "libGLEW|/libGLEW[^/]*?\.dylib$|regular"
+        "libjpeg|/libjpeg[^/]*?\.dylib$|regular"
+        "libpng|/libpng[^/]*?\.dylib$|regular"
+        "libtinyxml2|/libtinyxml2[^/]*?\.dylib$|regular"
+        "libtiff|/libtiff[^/]*?\.dylib$|regular"
+        "libzstd|/libzstd[^/]*?\.dylib$|regular"
+        "liblzma|/liblzma[^/]*?\.dylib$|regular"
+        "libavcodec|/libavcodec[^/]*?\.dylib$|regular"
+        "libavformat|/libavformat[^/]*?\.dylib$|regular"
+        "libavutil|/libavutil[^/]*?\.dylib$|regular"
+        "libswscale|/libswscale[^/]*?\.dylib$|regular"
+        "libswresample|/libswresample[^/]*?\.dylib$|regular"
+    )
+
     (
     find "$INSTALL_DIR" -type f -name "Qt*" -path "*/Qt*.framework/Versions/*/Qt*" | grep -v "Headers"
     find "$INSTALL_DIR" -type f -name "*.dylib"
@@ -78,96 +100,76 @@ check-all-deps() {
     ) | while read lib; do
         echo "  Checking (pass $pass) $lib"
 
-        libqt=""
-        libpython=""
-        libboost=""
-        libicu=""
-        libglew=""
-        libjpeg=""
-        libpng=""
-        libtinyxml2=""
-        libtiff=""
-        libzstd=""
-        liblzma=""
         dependencies="$( otool -L $lib | tail -n +2 | perl -p -e 's/^[\t ]+(.*) \(.*$/\1/g' )"
 
+        # Check if any fixup is needed
         is_fixup_needed="false"
-        if echo "$dependencies" | grep --quiet "/Qt"       ||
-           echo "$dependencies" | grep --quiet "/Python" ||
-           echo "$dependencies" | grep --quiet "/libboost" ||
-           echo "$dependencies" | grep --quiet "/libicu"   ||
-           echo "$dependencies" | grep --quiet "/libGLEW"  ||
-           echo "$dependencies" | grep --quiet "/libjpeg"  ||
-           echo "$dependencies" | grep --quiet "/libpng"   ||
-           echo "$dependencies" | grep --quiet "/libtinyxml2"  ||
-           echo "$dependencies" | grep --quiet "/libtiff"  ||
-           echo "$dependencies" | grep --quiet "/libzstd"  ||
-           echo "$dependencies" | grep --quiet "/liblzma"  ; then
-            is_fixup_needed="true"
-        fi
+        for pattern_entry in "${lib_patterns[@]}"; do
+            search_pattern="${pattern_entry%%|*}"
+            if echo "$dependencies" | grep --quiet "/$search_pattern"; then
+                is_fixup_needed="true"
+                break
+            fi
+        done
+
         if [[ "$is_fixup_needed" == "false" ]]; then
             continue # skip this lib
         fi
 
         (echo "$dependencies") | while read dep; do
-            if libqt="$(echo $dep | egrep -o "/Qt[A-Za-z]*$" | cut -c2-)" && [ -n "$libqt" ]; then
-                libname="$libqt"
-            elif libpython="$(echo $dep | egrep -o "/Python.framework.*"  | cut -c2-)" && [ -n "$libpython" ]; then
-                libname="$libpython"
-            elif libboost="$(echo $dep | egrep -o "/libboost_[^\/]*?\.dylib" | cut -c2-)" && [ -n "$libboost" ]; then
-                libname="$libboost"
-            elif libicu="$(echo $dep | egrep -o "/libicu[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libicu" ]; then
-                libname="$libicu"
-            elif libglew="$(echo $dep | egrep -o "/libGLEW[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libglew" ]; then
-                libname="$libglew"
-            elif libjpeg="$(echo $dep | egrep -o "/libjpeg[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libjpeg" ]; then
-                libname="$libjpeg"
-            elif libpng="$(echo $dep | egrep -o "/libpng[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libpng" ]; then
-                libname="$libpng"
-            elif libtinyxml2="$(echo $dep | egrep -o "/libtinyxml2[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libtinyxml2" ]; then
-                libname="$libtinyxml2"
-            elif libtiff="$(echo $dep | egrep -o "/libtiff[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libtiff" ]; then
-                libname="$libtiff"
-            elif libzstd="$(echo $dep | egrep -o "/libzstd[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$libzstd" ]; then
-                libname="$libzstd"
-            elif liblzma="$(echo $dep | egrep -o "/liblzma[^\/]*?\.dylib$" | cut -c2-)" && [ -n "$liblzma" ]; then
-                libname="$liblzma"
-            else
+            libname=""
+            lib_pattern=""
+            lib_type=""
+
+            # Try to match against each pattern
+            for pattern_entry in "${lib_patterns[@]}"; do
+                IFS='|' read -r search_pattern extract_regex type_flag <<< "$pattern_entry"
+
+                if extracted="$(echo "$dep" | egrep -o "$extract_regex" | cut -c2-)" && [ -n "$extracted" ]; then
+                    libname="$extracted"
+                    lib_pattern="$search_pattern"
+                    lib_type="$type_flag"
+                    break
+                fi
+            done
+
+            # If no pattern matched, check for other /usr/local/ dependencies
+            if [ -z "$libname" ]; then
                 if [[ "$dep" == "/usr/local/"* ]]; then
                     echo "WARNING: no fixup rule set for: $dep"
                 fi
-                # this dep is not a lib to fixup
                 continue
             fi
 
             if [[ "$mode" == "copy" ]]; then
-                if [ -n "$libqt" ]; then
-                    originlib="$QT_LIB_DIR/$libqt.framework"
-                    destlib="$INSTALL_DIR/lib/$libqt.framework"
+                if [[ "$lib_pattern" == "Qt" ]]; then
+                    originlib="$QT_LIB_DIR/$libname.framework"
+                    destlib="$INSTALL_DIR/lib/$libname.framework"
                 else
                     originlib="$dep"
                     destlib="$INSTALL_DIR/lib/$libname"
                 fi
-                if [ -e $originlib ] && [ ! -e $destlib ] && [ -z "$libpython" ]; then
-                    echo "    cp -Rf $dep $INSTALL_DIR/lib"
+
+                if [ -e $originlib ] && [ ! -e $destlib ] && [[ "$lib_pattern" != "Python" ]]; then
+                    echo "    cp -Rf $originlib $INSTALL_DIR/lib"
                     cp -Rf $originlib $INSTALL_DIR/lib
                 fi
+
             elif [[ "$mode" == "fixup" ]]; then
-                if [ -n "$libqt" ]; then
-                    rpathlib="$libqt.framework/$libqt"
-                elif [  -n "$libpython" ]; then
-                    rpathlib="$libpython"
+                if [[ "$lib_pattern" == "Qt" ]]; then
+                    rpathlib="$libname.framework/$libname"
                 else
                     rpathlib="$libname"
                 fi
+
                 libbasename="$(basename $lib)"
                 echo "install_name_tool -change $dep @rpath/$rpathlib $libbasename"
                 install_name_tool -change $dep @rpath/$rpathlib $lib
 
-                if [  -n "$libpython" ]; then
+                if [[ "$lib_pattern" == "Python" ]]; then
                     echo "install_name_tool -add_rpath \"/usr/local/Frameworks/\" $libbasename"
-                    install_name_tool -add_rpath "/usr/local/Frameworks/" $lib
-                    install_name_tool -add_rpath "/opt/homebrew/Frameworks/" $lib
+                    install_name_tool -add_rpath "/usr/local/Frameworks/" "$lib"
+                    install_name_tool -add_rpath "/opt/homebrew/Frameworks/" "$lib"
                 fi
             fi
         done

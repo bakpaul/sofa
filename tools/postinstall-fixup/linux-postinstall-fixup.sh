@@ -161,7 +161,7 @@ for deps_file in postinstall_deps_SOFA.tmp postinstall_deps_plugin_*.tmp; do
     echo_debug "-------------------------------"
     echo_debug "target = $target"
 
-    groups="libQt libpng libicu libmng libxcb libxkb libpcre2 libjbig libwebp libjpeg libsnappy libtiff"
+    groups="libQt libpng libicu libmng libxcb libxkb libpcre2 libjbig libwebp libjpeg libsnappy libtiff libavcodec libavformat libavutil libswscale libswresample"
     for group in $groups; do
         echo_debug "    group = $group"
 
