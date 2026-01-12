@@ -896,6 +896,8 @@ function(sofa_install_libraries)
         foreach(target ${targets})
             get_target_property(target_location ${target} LOCATION_${BUILD_TYPE_UPPER})
             get_target_property(is_framework ${target} FRAMEWORK)
+            get_target_property(temp_paths ${target} INTERFACE_LINK_LIBRARIES)
+            list(APPEND lib_paths ${temp_paths})
             if(APPLE AND is_framework)
                 get_filename_component(target_location ${target_location} DIRECTORY) # parent dir
                 install(DIRECTORY ${target_location} DESTINATION "lib" COMPONENT applications)
