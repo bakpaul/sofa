@@ -31,8 +31,6 @@
 #include <iostream>
 #include <numeric>
 
-#include "../../../../../Component/Topology/Container/Grid/src/sofa/component/topology/container/grid/polygon_cube_intersection/vec.h"
-
 namespace // anonymous
 {
     template<typename real>
