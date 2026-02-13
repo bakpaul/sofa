@@ -178,10 +178,6 @@ jobs:
               done
           fi
 
-          #Get right python executable
-          pixi shell
-          echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
-  
 
 
       - name: Build SOFA [MacOS/Linux/Windows]
@@ -220,12 +216,23 @@ jobs:
           pixi run -e ${{ inputs.preset }} configure $CMAKE_OPTIONS
           pixi run -e ${{ inputs.preset }} build 
 
+      - name: Setup env for tests
+        shell: bash
+        run: |
+          cd ${SRC_DIR}
+
+          #Get right python executable
+          pixi shell
+          echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
+  
 
       - name: Unit tests
         id: unit-tests-step 
         if: always() && steps.build-step.outcome == 'success' && inputs.generate-binaries == false
         shell: bash
         run: |
+          cd ${SRC_DIR}
+
           #Activate pixi shell
           pixi shell
 
@@ -241,8 +248,10 @@ jobs:
         if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
         shell: bash
         run: |
+          cd ${SRC_DIR}
+
           #Activate pixi shell
-          pixi shell
+          pixi shel
 
           echo "Launching scene test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
@@ -256,8 +265,10 @@ jobs:
         if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
         shell: bash
         run: |
+          cd ${SRC_DIR}
+
           #Activate pixi shell
-          pixi shell
+          pixi shel
 
           echo "Launching regression test suite"
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
@@ -275,17 +286,6 @@ jobs:
           path: |
             ${{ env.SOFA_BUILD_DIR }}/SOFA_v*
       
-      
-      - name: Publish build logs
-        id: publish-build-logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs_${{ env.BUILDER_OS }}
-          path: |
-            ${{ env.LOG_DIR }}/make-output.txt
-            ${{ env.LOG_DIR }}/cmake-output.txt
-
 
       - name: Publish tests logs
         id: publish-tests-logs
