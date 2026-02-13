@@ -163,6 +163,8 @@ jobs:
 
           SOFA_BUILD_DIR=$WORKSPACE/build
           echo "SOFA_BUILD_DIR=$SOFA_BUILD_DIR" >> $GITHUB_ENV
+          SOFA_INSTALL_PREFIX=$WORKSPACE/install
+          echo "SOFA_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX" >> $GITHUB_ENV
 
           if [ -n "${{ inputs.external-plugins }}" ]; then
               echo "Setting up external plugins."
@@ -175,6 +177,10 @@ jobs:
                   echo "sofa_add_external(plugin $plugin_repo GIT_REF $plugin_branch GIT_REPOSITORY $plugin_base ON)" >> "${SRC_DIR}/applications/CMakeLists.txt"
               done
           fi
+
+          #Get right python executable
+          pixi shell
+          echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
   
 
 
@@ -220,8 +226,8 @@ jobs:
         if: always() && steps.build-step.outcome == 'success' && inputs.generate-binaries == false
         shell: bash
         run: |
-          # If os has got docker then use it
-          # Here no need to fetch it because it has already been taken care of in the build step
+          #Activate pixi shell
+          pixi shell
 
           echo "Launching unit test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
@@ -235,8 +241,8 @@ jobs:
         if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
         shell: bash
         run: |
-          # If os has got docker then use it
-          # Here no need to fetch it because it has already been taken care of in the build step
+          #Activate pixi shell
+          pixi shell
 
           echo "Launching scene test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
@@ -250,8 +256,8 @@ jobs:
         if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
         shell: bash
         run: |
-          # If os has got docker then use it
-          # Here no need to fetch it because it has already been taken care of in the build step
+          #Activate pixi shell
+          pixi shell
 
           echo "Launching regression test suite"
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
@@ -291,10 +297,15 @@ jobs:
             ${{ env.SOFA_BUILD_DIR }}/tests_results/
 
 
+      - name: Configure python for display
+        run: |
+          pip install prettytable
+
       - name: Summarize results
         if: always()
         shell: bash
         run: |
+
           bold="\033[1m"
           normal="\033[0m"
           if [[ "${{ steps.configure.outcome }}" == "failure" || "${{ steps.clone.outcome }}" == "failure" ]]; then
