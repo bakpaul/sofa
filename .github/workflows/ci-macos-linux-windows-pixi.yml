@@ -251,7 +251,7 @@ jobs:
           cd ${SRC_DIR}
 
           #Activate pixi shell
-          pixi shel
+          pixi shell
 
           echo "Launching scene test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
@@ -268,7 +268,7 @@ jobs:
           cd ${SRC_DIR}
 
           #Activate pixi shell
-          pixi shel
+          pixi shell
 
           echo "Launching regression test suite"
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
