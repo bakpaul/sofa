@@ -680,6 +680,7 @@ void SpringForceField<DataTypes>::addToMatrix(Matrix* globalMatrix,
 template<class DataTypes>
 void SpringForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix)
 {
+    std::cout<<"SpringFF addKToMatrix"<<std::endl;
     const Real kFact = (Real)sofa::core::mechanicalparams::kFactorIncludingRayleighDamping(mparams,this->rayleighStiffness.getValue());
     if (this->mstate1 == this->mstate2)
     {
@@ -713,7 +714,7 @@ void SpringForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mpa
         const sofa::core::behavior::MultiMatrixAccessor::InteractionMatrixRef mat12 = matrix->getMatrix(this->mstate1, this->mstate2);
         const sofa::core::behavior::MultiMatrixAccessor::InteractionMatrixRef mat21 = matrix->getMatrix(this->mstate2, this->mstate1);
 
-        if (!mat11 && !mat22 && !mat12 && !mat21) return;
+        if (!mat11 || !mat22 || !mat12 || !mat21) return;
         const sofa::type::vector<Spring >& ss = this->d_springs.getValue();
         const sofa::Size n = ss.size() < this->dfdx.size() ? sofa::Size(ss.size()) : sofa::Size(this->dfdx.size());
         for (sofa::Index e = 0; e < n; ++e)
@@ -735,6 +736,8 @@ void SpringForceField<DataTypes>::addKToMatrix(const core::MechanicalParams* mpa
 template <class DataTypes>
 void SpringForceField<DataTypes>::buildStiffnessMatrix(core::behavior::StiffnessMatrix* matrix)
 {
+    std::cout<<"SpringFF buildStiffnessMatrix"<<std::endl;
+
     const sofa::type::vector<Spring >& ss = this->d_springs.getValue();
     const auto n = std::min(ss.size(), this->dfdx.size());
     if (this->mstate1 == this->mstate2)
@@ -768,10 +771,15 @@ void SpringForceField<DataTypes>::buildStiffnessMatrix(core::behavior::Stiffness
         auto* m1 = this->mstate1.get();
         auto* m2 = this->mstate2.get();
 
+
         auto df1_dx1 = matrix->getForceDerivativeIn(m1).withRespectToPositionsIn(m1);
         auto df1_dx2 = matrix->getForceDerivativeIn(m1).withRespectToPositionsIn(m2);
         auto df2_dx1 = matrix->getForceDerivativeIn(m2).withRespectToPositionsIn(m1);
         auto df2_dx2 = matrix->getForceDerivativeIn(m2).withRespectToPositionsIn(m2);
+
+        std::cout<<"m1 : "<<m1<<"  "<<m1->getName()<<std::endl;
+        std::cout<<"m2 : "<<m2<<"  "<<m2->getName()<<std::endl;
+
 
         df1_dx1.checkValidity(this);
         df1_dx2.checkValidity(this);

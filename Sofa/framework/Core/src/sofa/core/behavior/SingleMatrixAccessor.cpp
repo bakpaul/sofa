@@ -37,6 +37,8 @@ void SingleMatrixAccessor::setMatrix( BaseMatrix* m )
 
 SingleMatrixAccessor::InteractionMatrixRef SingleMatrixAccessor::getMatrix(const core::behavior::BaseMechanicalState*, const core::behavior::BaseMechanicalState* ) const
 {
+    std::cout<<"SingleMatrixAccessor blobl1"<<std::endl;
+
     assert(false);
     InteractionMatrixRef ref;
     return ref;
@@ -44,6 +46,8 @@ SingleMatrixAccessor::InteractionMatrixRef SingleMatrixAccessor::getMatrix(const
 
 SingleMatrixAccessor::MatrixRef SingleMatrixAccessor::getMatrix(const core::behavior::BaseMechanicalState*) const
 {
+    std::cout<<"SingleMatrixAccessor blobl2"<<std::endl;
+
     return matRef;
 }
 

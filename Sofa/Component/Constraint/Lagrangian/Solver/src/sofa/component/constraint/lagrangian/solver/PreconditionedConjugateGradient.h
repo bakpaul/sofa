@@ -39,10 +39,6 @@ public:
     PreconditionedConjugateGradient();
 
 protected:
-    /**
-     * Based on method called "CG - Three-Term Recurrence Variant" in the paper
-     * Yousef Saad. 2003. Iterative methods for sparse linear systems. Vol. 82. siam.
-     **/
     virtual void doSolve(GenericConstraintProblem * problem , SReal timeout = 0.0) override;
 
 };

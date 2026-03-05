@@ -38,9 +38,9 @@ PreconditionedConjugateGradient::PreconditionedConjugateGradient()
     : BuiltConstraintSolver()
 {}
 
-void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem , SReal timeout)
+    void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem , SReal timeout)
 {
-    SCOPED_TIMER_VARNAME(gaussSeidelTimer, "PreconditionnedConjugateResidual");
+    SCOPED_TIMER_VARNAME(gaussSeidelTimer, "PreconditionedConjugateGradient");
 
 
     const int dimension = problem->getDimension();
@@ -59,15 +59,9 @@ void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem
 
     //The use of std::vector-based matrix and vectors is motivated by the destruction
     linearalgebra::FullVector<SReal> r(dimension);
-    linearalgebra::FullVector<SReal> Wr(dimension);
+    linearalgebra::FullVector<SReal> p(dimension);
+    linearalgebra::FullVector<SReal> Wp(dimension);
     linearalgebra::FullMatrix<SReal> MW(dimension, dimension);
-
-    linearalgebra::FullVector<SReal> xm1(dimension);
-    linearalgebra::FullVector<SReal> sx(dimension);
-    linearalgebra::FullVector<SReal> rm1(dimension);
-    linearalgebra::FullVector<SReal> sr(dimension);
-
-
 
     // ===== BEGIN Initialization =====
     // Initialize state (matrices/vectors) and apply Jacobi preconditioner on left and right to keep symetry
@@ -90,16 +84,8 @@ void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem
     }
 
     memset(force.ptr(), 0, dimension*sizeof(SReal));
-    memset(xm1.ptr(), 0, dimension*sizeof(SReal));
-
-    SReal rho = 1;
-    SReal rhom1 = 1;
-    SReal gamma = 1;
-    SReal gammam1 = 1 ;
-
-    SReal rr = r.dot(r);
-    SReal rrm1 = rr;
-
+    p = r;
+    SReal previousRSqrdNorm = r.dot(r);
     // ===== END Initialization =====
 
 
@@ -117,30 +103,10 @@ void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem
         iterCount ++;
         bool constraintsAreVerified = true;
 
-        //Save state
-        const SReal srho = rho;
-        const SReal srr = rr;
-        sx = force;
-        sr = r;
-
-        //Compute new step
-        Wr = MW*r;
-        const SReal rWr = r.dot(Wr);
-        rr = r.dot(r);
-        gamma = rr/rWr;
-
-
-        if ( i>0 ) [[likely]]
-        {
-            rho = 1/(1 - gamma/gammam1 * rr/rrm1 * 1/rhom1);
-        }
-        force.eq(force, r, -gamma);
-        force.eq(force, rho);
-        force.eq(force, xm1, (1-rho));
-
-        r.eq(r, Wr, -gamma);
-        r.eq(r, rho);
-        r.eq(force, rm1, (1-rho));
+        Wp = MW * p;
+        const SReal alpha = previousRSqrdNorm /(p.dot(Wp));
+        force.eq(force, p, alpha);
+        r.eq(r, Wp, -alpha);
 
         error=0.0;
 
@@ -172,11 +138,11 @@ void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem
             break;
         }
 
-        rhom1 = srho;
-        rrm1 = srr;
-        xm1 = sx;
-        rm1 = sr;
-        gammam1 = gamma;
+        const SReal rSqrdNorm = r.dot(r);
+        const SReal beta = rSqrdNorm/previousRSqrdNorm;
+        previousRSqrdNorm = rSqrdNorm;
+
+        p.eq(r, p, beta);
 
     }
 
@@ -186,7 +152,7 @@ void PreconditionedConjugateGradient::doSolve(GenericConstraintProblem * problem
         force[j] /= sqrt(W[j][j]);
     }
 
-    sofa::helper::AdvancedTimer::valSet("PCR iterations", problem->currentIterations);
+    sofa::helper::AdvancedTimer::valSet("PCG iterations", problem->currentIterations);
 
     problem->result_output(this, force.ptr(), error, iterCount, convergence);
 

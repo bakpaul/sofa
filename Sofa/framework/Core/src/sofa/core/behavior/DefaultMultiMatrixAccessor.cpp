@@ -206,9 +206,12 @@ DefaultMultiMatrixAccessor::InteractionMatrixRef DefaultMultiMatrixAccessor::get
     InteractionMatrixRef r2;
     if (mstate1 == mstate2)// case where state1 == state2, interaction matrix is on the diagonal stiffness block
     {
+        std::cout<<"blob1"<<std::endl;
+
         const auto it = diagonalStiffnessBloc.find(mstate1);
         if (it == diagonalStiffnessBloc.end())
         {
+            std::cout<<"blob"<<std::endl;
             return r2; // Return empty/default InteractionMatrixRef
         }
         const MatrixRef r = it->second;
