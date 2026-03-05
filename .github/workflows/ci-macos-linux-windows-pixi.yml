@@ -163,6 +163,8 @@ jobs:
 
           SOFA_BUILD_DIR=$WORKSPACE/build
           echo "SOFA_BUILD_DIR=$SOFA_BUILD_DIR" >> $GITHUB_ENV
+          SOFA_INSTALL_PREFIX=$WORKSPACE/install
+          echo "SOFA_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX" >> $GITHUB_ENV
 
           if [ -n "${{ inputs.external-plugins }}" ]; then
               echo "Setting up external plugins."
@@ -175,17 +177,18 @@ jobs:
                   echo "sofa_add_external(plugin $plugin_repo GIT_REF $plugin_branch GIT_REPOSITORY $plugin_base ON)" >> "${SRC_DIR}/applications/CMakeLists.txt"
               done
           fi
-  
+
 
 
       - name: Build SOFA [MacOS/Linux/Windows]
+        id: build-step
         shell: bash -el {0}
         env:
           SOFA_BUILD_TYPE: ${{ matrix.build_type }}
         run: |
-          cd ${SRC_DIR} 
+          cd ${SRC_DIR}
 
-           
+          
           ## Deal with ci-depends-on
           # Loop over each key-value pair in the JSON avoiding ci repository if inside
           CMAKE_OPTIONS="${{inputs.additionnal-cmake-flags}}"
@@ -213,9 +216,148 @@ jobs:
           pixi run -e ${{ inputs.preset }} configure $CMAKE_OPTIONS
           pixi run -e ${{ inputs.preset }} build 
 
-      - name: Testing - Run SOFA in batch mode [MacOS/Linux/Windows]
-        shell: bash -el {0}
-        env:
-          SOFA_BUILD_TYPE: ${{ matrix.build_type }}
+      - name: Setup env for tests
+        shell: bash
         run: |
-          pixi run -e ${{ inputs.preset }} runSofa -g batch
+          cd ${SRC_DIR}
+
+          #Get right python executable
+          pixi shell
+          echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
+  
+
+      - name: Unit tests
+        id: unit-tests-step 
+        if: always() && steps.build-step.outcome == 'success' && inputs.generate-binaries == false
+        shell: bash
+        run: |
+          cd ${SRC_DIR}
+
+          #Activate pixi shell
+          pixi shell
+
+          echo "Launching unit test suite."
+          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
+
+          if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"unit-tests_"* ]]; then
+            exit 1
+          fi
+
+      - name: Scene tests
+        id: scene-tests-step
+        if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
+        shell: bash
+        run: |
+          cd ${SRC_DIR}
+
+          #Activate pixi shell
+          pixi shell
+
+          echo "Launching scene test suite."
+          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
+
+          if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"scene-tests_"* ]]; then
+            exit 1
+          fi
+
+      - name: Regression tests
+        id: regression-tests-step
+        if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
+        shell: bash
+        run: |
+          cd ${SRC_DIR}
+
+          #Activate pixi shell
+          pixi shell
+
+          echo "Launching regression test suite"
+          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
+
+          if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"regression-tests_"* ]]; then
+            exit 1
+          fi
+
+
+      - name: Publish artifacts
+        if: steps.build-step.outcome == 'success' && inputs.generate-binaries == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries_${{ env.BUILDER_OS }}
+          path: |
+            ${{ env.SOFA_BUILD_DIR }}/SOFA_v*
+      
+
+      - name: Publish tests logs
+        id: publish-tests-logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-logs_${{ env.BUILDER_OS }}
+          path: |
+            ${{ env.SOFA_BUILD_DIR }}/tests_results/
+
+
+      - name: Configure python for display
+        run: |
+          pip install prettytable
+
+      - name: Summarize results
+        if: always()
+        shell: bash
+        run: |
+
+          bold="\033[1m"
+          normal="\033[0m"
+          if [[ "${{ steps.configure.outcome }}" == "failure" || "${{ steps.clone.outcome }}" == "failure" ]]; then
+            echo "❌ Something whent wrong during the configure or clone steps..."
+            echo -e "${bold}Please check those actions logs${normal}"
+            exit 1
+          else
+            echo "✅ Setup OK."
+          fi
+
+          if [[ "${{ steps.build-step.outcome }}" == "failure" ]]; then
+            echo "❌ Build step failed"
+            echo -e "${bold}You can download all logs here : ${{ steps.publish-build-logs.outputs.artifact-url }}${normal}"
+            exit 1
+          else
+            echo "✅ Build OK."
+          fi
+          
+          if [[ "${{ inputs.generate-binaries }}" == "false" ]]; then
+            if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" != "" ]]; then
+              echo "❌ Tests have resulted in : "
+              echo ""
+              python3 ${{ env.CI_DIR }}/scripts/generate-tests-table.py "${{ env.SOFA_BUILD_DIR }}/tests_results/"
+              echo ""
+              echo "#----------------------------------------#"
+              echo "#---------------Quick Logs---------------#"
+              echo "#----------------------------------------#"
+              for testType in 'unit' 'scene' 'regression';
+                do 
+                  for errorType in 'errors' 'crashes' 'failures';
+                  do
+                    if [ -f "${{ env.SOFA_BUILD_DIR }}/tests_results/${testType}-tests_${errorType}" ]; then 
+                      capitalized="$(echo "${testType:0:1}" | tr '[:lower:]' '[:upper:]')${testType:1}"
+                      echo ""
+                      echo -e "${bold}${capitalized} ${errorType}:${normal}"
+                      echo ""
+                      cat "${{ env.SOFA_BUILD_DIR }}/tests_results/${testType}-tests_${errorType}"
+                      echo ""
+                      echo "#----------------------------------------#"
+                    fi
+                  done
+                done
+              echo -e "${bold}You can download all logs here : ${{ steps.publish-tests-logs.outputs.artifact-url }}${normal}"
+              exit 1
+            elif [[ "${{ steps.unit-tests-step.outcome }}" == "failure" || "${{ steps.scene-tests-step.outcome }}" == "failure" || "${{ steps.regression-tests-step.outcome }}" == "failure" ]]; then
+              echo "❌ Something whent wrong during one of the tests steps"
+              echo -e "${bold}Please check this action logs, and download tests logs here: ${{ steps.publish-tests-logs.outputs.artifact-url }}${normal}"
+              exit 1
+            else
+              echo "✅ Tests where successful : "
+              echo ""
+              python3 ${{ env.CI_DIR }}/scripts/generate-tests-table.py "${{ env.SOFA_BUILD_DIR }}/tests_results/"
+              echo ""
+            fi
+          fi

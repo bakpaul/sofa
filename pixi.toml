@@ -22,6 +22,7 @@ eigen = ">=3.4.0"
 tinyxml2 = ">=9.0.0"
 cxxopts = ">=3.1.1"
 gtest = "*"
+tight-inclusion = "*"
 
 [tasks]
 build = { cmd = "cmake --build $SOFA_BUILD_DIR --target all", depends-on = ["configure"] }
@@ -91,7 +92,7 @@ activation = { env = { SOFA_PLUGIN_SOFACUDA_ARGS = "-DPLUGIN_SOFACUDA=OFF -DPLUG
 [feature.plugin-cgal.target.unix]
 dependencies = { cgal-cpp = "*", gmp = "*" }
 [feature.plugin-cgal.target.win]
-activation = { env = { SOFA_PLUGIN_SOFACGAL_ARGS = "-DPLUGIN_CGALPLUGIN=OFF" } }
+activation = { env = { SOFA_PLUGIN_SOFACGAL_ARGS = "-DSOFA_FETCH_CGALPLUGIN=OFF -DPLUGIN_CGALPLUGIN=OFF" } }
 
 [feature.plugin-cimg]
 dependencies = { zstd = "*", libtiff = "*", libjpeg-turbo = "*", libpng = "*" }
@@ -157,7 +158,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "conda-core"] }
@@ -170,7 +171,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "minimal"] }
@@ -183,7 +184,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "standard",
@@ -198,7 +199,7 @@ configure = { cmd = [ "cmake",
   "-S",
   ".",
   "-DCMAKE_VERBOSE_MAKEFILE=ON",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "supported-plugins",
@@ -215,7 +216,7 @@ configure = { cmd = [ "cmake",
   "-S",
   ".",
   "-DCMAKE_VERBOSE_MAKEFILE=ON",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "-DPLUGIN_SOFACUDA=$SOFA_PLUGIN_SOFACUDA",
   "-DSOFACUDA_ENABLE_NATIVE_ARCHITECTURE=ON",
@@ -233,7 +234,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "minimal-dev"] }
@@ -246,7 +247,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "standard-dev",
@@ -260,7 +261,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "supported-plugins-dev",
@@ -276,7 +277,7 @@ configure = { cmd = [ "cmake",
   "$SOFA_BUILD_DIR",
   "-S",
   ".",
-  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_INSTALL_PREFIX=$SOFA_INSTALL_PREFIX",
   "-DCMAKE_BUILD_TYPE=$SOFA_BUILD_TYPE",
   "--preset",
   "full-dev",
