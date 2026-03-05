@@ -110,6 +110,7 @@ jobs:
       - name: Setup SOFA and clone CI
         shell: bash -el {0}
         run: |
+        
           export WORKSPACE=$GITHUB_WORKSPACE
           echo "WORKSPACE=$WORKSPACE" >> $GITHUB_ENV
 
