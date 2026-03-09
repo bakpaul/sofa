@@ -224,7 +224,7 @@ jobs:
           #Get right python executable
           pixi shell
           echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
-  
+          exit 0
 
       - name: Unit tests
         id: unit-tests-step 
@@ -242,6 +242,7 @@ jobs:
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"unit-tests_"* ]]; then
             exit 1
           fi
+          exit 0
 
       - name: Scene tests
         id: scene-tests-step
@@ -260,6 +261,8 @@ jobs:
             exit 1
           fi
 
+          exit 0 
+
       - name: Regression tests
         id: regression-tests-step
         if: always() && matrix.os == 'windows-latest' && steps.build-step.outcome == 'success' && inputs.generate-binaries == false && inputs.with-all-tests == true
@@ -276,6 +279,8 @@ jobs:
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"regression-tests_"* ]]; then
             exit 1
           fi
+
+          exit 0 
 
 
       - name: Publish artifacts
