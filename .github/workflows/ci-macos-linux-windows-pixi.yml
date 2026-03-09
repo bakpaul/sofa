@@ -222,7 +222,8 @@ jobs:
           cd ${SRC_DIR}
 
           #Get right python executable
-          pixi shell
+          eval "$(pixi shell-hook)"
+
           echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
           exit 0
 
@@ -234,7 +235,7 @@ jobs:
           cd ${SRC_DIR}
 
           #Activate pixi shell
-          pixi shell
+          eval "$(pixi shell-hook)"
 
           echo "Launching unit test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
@@ -252,7 +253,7 @@ jobs:
           cd ${SRC_DIR}
 
           #Activate pixi shell
-          pixi shell
+          eval "$(pixi shell-hook)"
 
           echo "Launching scene test suite."
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
@@ -271,7 +272,7 @@ jobs:
           cd ${SRC_DIR}
 
           #Activate pixi shell
-          pixi shell
+          eval "$(pixi shell-hook)"
 
           echo "Launching regression test suite"
           bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
