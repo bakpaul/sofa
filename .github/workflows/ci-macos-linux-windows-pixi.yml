@@ -101,12 +101,6 @@ jobs:
       - run: git config --global user.email "<>"
       - run: git config --global user.name "SOFA Bot"
 
-      - uses: prefix-dev/setup-pixi@v0.8.10
-        with:
-          cache: false
-          manifest-path: sofa/pixi.toml
-          environments: ${{ inputs.preset }}
-
       - name: Setup SOFA and clone CI
         shell: bash -el {0}
         run: |
@@ -179,6 +173,11 @@ jobs:
           fi
 
 
+      - uses: prefix-dev/setup-pixi@v0.8.10
+        with:
+          cache: false
+          manifest-path: sofa/pixi.toml
+          environments: ${{ inputs.preset }}
 
       - name: Build SOFA [MacOS/Linux/Windows]
         id: build-step
@@ -277,7 +276,7 @@ jobs:
         if: steps.build-step.outcome == 'success' && inputs.generate-binaries == true
         uses: actions/upload-artifact@v4
         with:
-          name: binaries_${{ env.BUILDER_OS }}
+          name: binaries_${{ matrix.os }}
           path: |
             ${{ env.SOFA_BUILD_DIR }}/SOFA_v*
       
@@ -287,15 +286,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tests-logs_${{ env.BUILDER_OS }}
+          name: tests-logs_${{ matrix.os }}
           path: |
             ${{ env.SOFA_BUILD_DIR }}/tests_results/
 
 
       - name: Configure python for display
         if: always()
+        shell: bash
         run: |
-          pip install prettytable
+          python3 -m pip install prettytable
 
       - name: Summarize results
         if: always()
