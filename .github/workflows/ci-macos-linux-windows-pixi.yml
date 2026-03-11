@@ -221,10 +221,8 @@ jobs:
         run: |
           cd ${SRC_DIR}
 
-          #Get right python executable
-          eval "$(pixi shell-hook -e ${{ inputs.preset }})"
+          pixi run -e ${{ inputs.preset }} echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
 
-          echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
           exit 0
 
       - name: Unit tests
@@ -234,11 +232,8 @@ jobs:
         run: |
           cd ${SRC_DIR}
 
-          #Activate pixi shell
-          eval "$(pixi shell-hook -e ${{ inputs.preset }})"
-
           echo "Launching unit test suite."
-          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
+          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
 
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"unit-tests_"* ]]; then
             exit 1
@@ -252,11 +247,8 @@ jobs:
         run: |
           cd ${SRC_DIR}
 
-          #Activate pixi shell
-          eval "$(pixi shell-hook -e ${{ inputs.preset }})"
-
           echo "Launching scene test suite."
-          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
+          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
 
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"scene-tests_"* ]]; then
             exit 1
@@ -271,11 +263,8 @@ jobs:
         run: |
           cd ${SRC_DIR}
 
-          #Activate pixi shell
-          eval "$(pixi shell-hook -e ${{ inputs.preset }})"
-
           echo "Launching regression test suite"
-          bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
+          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
 
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"regression-tests_"* ]]; then
             exit 1
@@ -304,6 +293,7 @@ jobs:
 
 
       - name: Configure python for display
+        if: always()
         run: |
           pip install prettytable
 
