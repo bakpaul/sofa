@@ -219,9 +219,23 @@ jobs:
         shell: bash
         run: |
           cd ${SRC_DIR}
+          PIXI_PREFIX="$(pwd)/.pixi/envs/${{ inputs.preset }}/"
+          echo "VM_PYTHON3_EXECUTABLE=$PIXI_PREFIX/python.exe" >> $GITHUB_ENV
 
-          pixi run -e ${{ inputs.preset }} echo "VM_PYTHON3_EXECUTABLE=$SOFA_PYTHON_EXECUTABLE" >> $GITHUB_ENV
-
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+             #Activating pixi env in a git-bash terminal is broken, here we just want to consume it. 
+             
+             echo "PIXI_PREFIX=$PIXI_PREFIX" >> $GITHUB_ENV
+             
+             echo "$PIXI_PREFIX" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/bin" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/Library/bin" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/Scripts" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/Library/mingw-w64/bin" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/Library/usr/bin" >> $GITHUB_PATH
+             echo "$PIXI_PREFIX/sofa-build/bin/" >> $GITHUB_PATH
+          fi
+          
           exit 0
 
       - name: Unit tests
@@ -232,8 +246,12 @@ jobs:
           cd ${SRC_DIR}
 
           echo "Launching unit test suite."
-          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
-
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
+          else
+            pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "UNIT"
+          fi
+          
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"unit-tests_"* ]]; then
             exit 1
           fi
@@ -247,8 +265,12 @@ jobs:
           cd ${SRC_DIR}
 
           echo "Launching scene test suite."
-          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
-
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
+          else
+            pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "SCENE"
+          fi
+          
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"scene-tests_"* ]]; then
             exit 1
           fi
@@ -263,8 +285,12 @@ jobs:
           cd ${SRC_DIR}
 
           echo "Launching regression test suite"
-          pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
-
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
+          else
+            pixi run -e ${{ inputs.preset }} bash ${CI_DIR}/scripts/test.sh "${SOFA_BUILD_DIR}" "${SRC_DIR}" "${CI_DIR}/scripts/" "" "${{ inputs.python-version }}" "REGRESSION"
+          fi
+          
           if [[ "$(cd "${{ env.SOFA_BUILD_DIR }}/tests_results/" && find . -maxdepth 1 -type f)" == *"regression-tests_"* ]]; then
             exit 1
           fi
