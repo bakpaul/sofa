@@ -38,11 +38,11 @@ namespace sofa::core::behavior
  *  certainly change soon.
  *
  */
-class SOFA_CORE_API BaseTimeIntegrator : public virtual objectmodel::BaseObject
+class SOFA_CORE_API BaseTimeIntegrator : public virtual objectmodel::BaseComponent
 {
 
 public:
-    SOFA_ABSTRACT_CLASS(BaseTimeIntegrator, objectmodel::BaseObject);
+    SOFA_ABSTRACT_CLASS(BaseTimeIntegrator, objectmodel::BaseComponent);
     SOFA_BASE_CAST_IMPLEMENTATION(BaseTimeIntegrator)
 
     // the node where the loop will start processing.

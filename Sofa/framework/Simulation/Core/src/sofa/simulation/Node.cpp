@@ -101,6 +101,7 @@ Node::Node(const std::string& nodename, Node* parent)
     , unsorted(initLink("unsorted", "The remaining objects attached to this node"))
 
     , animationManager(initLink("animationLoop","The AnimationLoop attached to this node (only valid for root node)"))
+    , timeIntegrator(initLink("timeIntegrator","The TimeIntegrator attached to this node (only valid for root node)"))
     , visualLoop(initLink("visualLoop", "The VisualLoop attached to this node (only valid for root node)"))
     , visualStyle(initLink("visualStyle", "The VisualStyle(s) attached to this node"))
     , topology(initLink("topology", "The Topology attached to this node"))

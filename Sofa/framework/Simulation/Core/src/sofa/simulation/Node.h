@@ -248,6 +248,7 @@ public:
     NodeSequence<sofa::core::objectmodel::BaseComponent> unsorted;
 
     NodeSingle<sofa::core::behavior::BaseAnimationLoop> animationManager;
+    NodeSingle<sofa::core::behavior::BaseTimeIntegrator> timeIntegrator;
     NodeSingle<sofa::core::visual::VisualLoop> visualLoop;
     NodeSingle<sofa::core::visual::BaseVisualStyle> visualStyle;
     NodeSingle<sofa::core::topology::Topology> topology;

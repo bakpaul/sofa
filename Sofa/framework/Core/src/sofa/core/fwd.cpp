@@ -33,6 +33,7 @@
 #include <sofa/core/behavior/BaseMass.h>
 #include <sofa/core/BehaviorModel.h>
 #include <sofa/core/behavior/BaseAnimationLoop.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
 #include <sofa/core/behavior/BaseMass.h>
 #include <sofa/core/behavior/OdeSolver.h>
 #include <sofa/core/behavior/ConstraintSolver.h>
@@ -170,6 +171,7 @@ SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::objectmodel::ContextOb
 SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::objectmodel::ConfigurationSetting);
 
 SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::behavior::BaseAnimationLoop);
+SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::behavior::BaseTimeIntegrator);
 SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::behavior::BaseMass);
 SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::behavior::OdeSolver);
 SOFA_DEFINE_OPAQUE_FUNCTIONS_BETWEEN_BASE_AND(sofa::core::behavior::ConstraintSolver);

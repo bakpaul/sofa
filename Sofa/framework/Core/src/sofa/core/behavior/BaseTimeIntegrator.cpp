@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/core/behavior/BaseAnimationLoop.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
 #include <sofa/core/objectmodel/BaseNode.h>
 
 #include <cstdlib>
@@ -28,16 +28,14 @@
 namespace sofa::core::behavior
 {
 
-BaseAnimationLoop::BaseAnimationLoop()
-    : l_node(initLink("targetNode","Link to the scene's node that will be processed by the loop"))
-    , m_resetTime(0.)
-    , d_computeBoundingBox(initData(&d_computeBoundingBox, !SOFA_NO_UPDATE_BBOX, "computeBoundingBox", "If true, compute the global bounding box of the scene at each time step. Used mostly for rendering."))
+BaseTimeIntegrator::BaseTimeIntegrator()
+    : l_node(initLink("targetNode","Link to the scene's node that will be processed by the integrator"))
 {}
 
-BaseAnimationLoop::~BaseAnimationLoop()
+BaseTimeIntegrator::~BaseTimeIntegrator()
 {}
 
-void BaseAnimationLoop::init()
+void BaseTimeIntegrator::init()
 {
     Inherit1::init();
 
@@ -45,29 +43,16 @@ void BaseAnimationLoop::init()
         l_node = dynamic_cast<sofa::core::objectmodel::BaseNode*>(getContext());
 }
 
-void BaseAnimationLoop::storeResetState()
+bool BaseTimeIntegrator::insertInNode( objectmodel::BaseNode* node )
 {
-    const objectmodel::BaseContext * c = this->getContext();
-
-    if (c != nullptr)
-        m_resetTime = c->getTime();
-}
-
-SReal BaseAnimationLoop::getResetTime() const
-{
-    return m_resetTime;
-}
-
-bool BaseAnimationLoop::insertInNode( objectmodel::BaseNode* node )
-{
-    node->addAnimationLoop(this);
+    node->addTimeIntegrator(this);
     Inherit1::insertInNode(node);
     return true;
 }
 
-bool BaseAnimationLoop::removeInNode( objectmodel::BaseNode* node )
+bool BaseTimeIntegrator::removeInNode( objectmodel::BaseNode* node )
 {
-    node->removeAnimationLoop(this);
+    node->addTimeIntegrator(this);
     Inherit1::removeInNode(node);
     return true;
 }
