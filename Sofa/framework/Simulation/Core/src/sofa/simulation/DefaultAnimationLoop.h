@@ -23,6 +23,7 @@
 
 #include <sofa/core/objectmodel/BaseComponent.h>
 #include <sofa/core/behavior/BaseAnimationLoop.h>
+#include <sofa/simulation/LinearTimeIntegrator.h>
 
 #include <sofa/simulation/fwd.h>
 
@@ -53,6 +54,8 @@ protected:
 
     ~DefaultAnimationLoop() override;
 
+
+    SingleLink<DefaultAnimationLoop, sofa::core::behavior::BaseTimeIntegrator, BaseLink::LinkFlagsEnum::FLAG_STOREPATH > l_baseTimeIntegrator;
 public:
     Data<bool> d_parallelODESolving; ///< If true, solves all the ODEs in parallel
 

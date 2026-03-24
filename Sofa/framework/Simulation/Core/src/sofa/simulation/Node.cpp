@@ -22,6 +22,7 @@
 #include <sofa/simulation/Node.h>
 
 #include <sofa/core/behavior/BaseAnimationLoop.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
 #include <sofa/core/behavior/BaseConstraintSet.h>
 #include <sofa/core/behavior/BaseInteractionForceField.h>
 #include <sofa/core/behavior/BaseProjectiveConstraintSet.h>

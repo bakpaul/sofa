@@ -100,6 +100,8 @@ DefaultAnimationLoop::DefaultAnimationLoop(simulation::Node* _m_node)
 
 DefaultAnimationLoop::~DefaultAnimationLoop() = default;
 
+using DefaultTimeIntegrator = sofa::simulation::LinearTimeIntegrator;
+
 void DefaultAnimationLoop::init()
 {
     Inherit::init();
@@ -110,6 +112,36 @@ void DefaultAnimationLoop::init()
     else
     {
         this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Valid);
+    }
+
+
+    if (!l_baseTimeIntegrator)
+    {
+        l_baseTimeIntegrator.set(this->getContext()->get<sofa::core::behavior::BaseTimeIntegrator>(core::objectmodel::BaseContext::SearchDown));
+        if (!l_baseTimeIntegrator)
+        {
+            if (const auto timeIntegrator = sofa::core::objectmodel::New<DefaultTimeIntegrator>())
+            {
+                getContext()->addObject(timeIntegrator);
+                timeIntegrator->setName( this->getContext()->getNameHelper().resolveName(timeIntegrator->getClassName(), {}));
+                timeIntegrator->f_printLog.setValue(this->f_printLog.getValue());
+                l_baseTimeIntegrator.set(timeIntegrator.get());
+
+                msg_warning() << "A ConstraintSolver is required by " << this->getClassName() << " but has not been found:"
+                    " a default " << timeIntegrator->getClassName() << " is automatically added in the scene for you. To remove this warning, add"
+                    " a ConstraintSolver in the scene. The list of available constraint solvers is: "
+                    << core::ObjectFactory::getInstance()->listClassesDerivedFrom<sofa::core::behavior::BaseTimeIntegrator>();
+            }
+            else
+            {
+                msg_fatal() << "A ConstraintSolver is required by " << this->getClassName() << " but has not been found:"
+                    " a default " << DefaultTimeIntegrator::GetClass()->className << " could not be automatically added in the scene. To remove this error, add"
+                    " a ConstraintSolver in the scene. The list of available constraint solvers is: "
+                    << core::ObjectFactory::getInstance()->listClassesDerivedFrom<sofa::core::behavior::BaseTimeIntegrator>();
+                this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Invalid);
+                return;
+            }
+        }
     }
 }
 
