@@ -53,7 +53,7 @@ protected:
 
 public:
 
-
+    virtual void setupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult) = 0;
 
     /**
      * Compute the system matrix.
@@ -109,6 +109,13 @@ public:
 
     bool insertInNode( objectmodel::BaseNode* node ) override;
     bool removeInNode( objectmodel::BaseNode* node ) override;
+
+protected:
+
+    const core::ExecParams* m_params;
+    SReal m_dt;
+    sofa::core::MultiVecCoordId m_xResult;
+    sofa::core::MultiVecDerivId m_vResult;
 
 };
 

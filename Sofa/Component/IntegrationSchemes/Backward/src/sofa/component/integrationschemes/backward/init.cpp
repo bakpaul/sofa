@@ -19,24 +19,52 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
+#include <sofa/component/integrationschemes/backward/init.h>
+#include <sofa/core/ObjectFactory.h>
+#include <sofa/helper/system/PluginManager.h>
 
-#pragma once
-#include <sofa/simulation/TimeIntegrator.h>
-
-namespace sofa::simulation
+namespace sofa::component::integrationschemes::backward
 {
 
-class SOFA_CORE_API LinearTimeIntegrator : public TimeIntegrator
-{
-public:
-    SOFA_CLASS(LinearTimeIntegrator, TimeIntegrator);
+extern void registerEulerImplicitIntegrationScheme(sofa::core::ObjectFactory* factory);
 
-    LinearTimeIntegrator();
-
-    Data<bool> d_parallelODESolving; ///< If true, solves all the ODEs in parallel
-
-    virtual void integrate(const sofa::core::ExecParams* params, SReal dt) override;
-
-};
-
+extern "C" {
+    SOFA_EXPORT_DYNAMIC_LIBRARY void initExternalModule();
+    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleName();
+    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleVersion();
+    SOFA_EXPORT_DYNAMIC_LIBRARY void registerObjects(sofa::core::ObjectFactory* factory);
 }
+
+void initExternalModule()
+{
+    init();
+}
+
+const char* getModuleName()
+{
+    return MODULE_NAME;
+}
+
+const char* getModuleVersion()
+{
+    return MODULE_VERSION;
+}
+
+void registerObjects(sofa::core::ObjectFactory* factory)
+{
+    registerEulerImplicitIntegrationScheme(factory);
+}
+
+void init()
+{
+    static bool first = true;
+    if (first)
+    {
+        // make sure that this plugin is registered into the PluginManager
+        sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
+
+        first = false;
+    }
+}
+
+} // namespace sofa::component::integrationschemes::backward

@@ -19,24 +19,60 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
+#include <sofa/component/integrationschemes/init.h>
 
-#pragma once
-#include <sofa/simulation/TimeIntegrator.h>
+#include <sofa/component/integrationschemes/backward/init.h>
+#include <sofa/component/integrationschemes/forward/init.h>
 
-namespace sofa::simulation
+#include <sofa/core/ObjectFactory.h>
+#include <sofa/helper/system/PluginManager.h>
+#include <sofa/Modules.h>
+
+namespace sofa::component::integrationschemes
 {
-
-class SOFA_CORE_API LinearTimeIntegrator : public TimeIntegrator
-{
-public:
-    SOFA_CLASS(LinearTimeIntegrator, TimeIntegrator);
-
-    LinearTimeIntegrator();
-
-    Data<bool> d_parallelODESolving; ///< If true, solves all the ODEs in parallel
-
-    virtual void integrate(const sofa::core::ExecParams* params, SReal dt) override;
-
-};
-
+    
+extern "C" {
+    SOFA_EXPORT_DYNAMIC_LIBRARY void initExternalModule();
+    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleName();
+    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleVersion();
+    SOFA_EXPORT_DYNAMIC_LIBRARY void registerObjects(sofa::core::ObjectFactory* factory);
 }
+
+void initExternalModule()
+{
+    init();
+}
+
+const char* getModuleName()
+{
+    return MODULE_NAME;
+}
+
+const char* getModuleVersion()
+{
+    return MODULE_VERSION;
+}
+
+void registerObjects(sofa::core::ObjectFactory* factory)
+{
+    factory->registerObjectsFromPlugin(Sofa.Component.IntegrationSchemes.Backward);
+    factory->registerObjectsFromPlugin(Sofa.Component.IntegrationSchemes.Forward);
+}
+
+void init()
+{
+    static bool first = true;
+    if (first)
+    {
+        // force dependencies at compile-time
+        sofa::component::integrationschemes::backward::init();
+        sofa::component::integrationschemes::forward::init();
+
+        // make sure that this plugin is registered into the PluginManager
+        sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
+
+        first = false;
+    }
+}
+
+} // namespace sofa::component::integrationschemes

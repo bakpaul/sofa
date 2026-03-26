@@ -29,7 +29,6 @@ namespace sofa::core::behavior
 {
 
 BaseTimeIntegrator::BaseTimeIntegrator()
-    : l_node(initLink("targetNode","Link to the scene's node that will be processed by the integrator"))
 {}
 
 BaseTimeIntegrator::~BaseTimeIntegrator()
@@ -38,9 +37,6 @@ BaseTimeIntegrator::~BaseTimeIntegrator()
 void BaseTimeIntegrator::init()
 {
     Inherit1::init();
-
-    if(!l_node)
-        l_node = dynamic_cast<sofa::core::objectmodel::BaseNode*>(getContext());
 }
 
 bool BaseTimeIntegrator::insertInNode( objectmodel::BaseNode* node )
@@ -56,6 +52,7 @@ bool BaseTimeIntegrator::removeInNode( objectmodel::BaseNode* node )
     Inherit1::removeInNode(node);
     return true;
 }
+
 
 } // namespace sofa::core::behavior
 

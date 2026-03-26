@@ -19,24 +19,10 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-
 #pragma once
-#include <sofa/simulation/TimeIntegrator.h>
+#include <sofa/component/integrationschemes/forward/config.h>
 
-namespace sofa::simulation
+namespace sofa::component::integrationschemes::forward
 {
-
-class SOFA_CORE_API LinearTimeIntegrator : public TimeIntegrator
-{
-public:
-    SOFA_CLASS(LinearTimeIntegrator, TimeIntegrator);
-
-    LinearTimeIntegrator();
-
-    Data<bool> d_parallelODESolving; ///< If true, solves all the ODEs in parallel
-
-    virtual void integrate(const sofa::core::ExecParams* params, SReal dt) override;
-
-};
-
-}
+    SOFA_COMPONENT_INTEGRATIONSCHEMES_FORWARD_API void init();
+} // namespace sofa::component::integrationschemes::forward

@@ -20,14 +20,71 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include <sofa/simulation/LinearTimeIntegrator.h>
+#include <sofa/core/MechanicalParams.h>
+#include <sofa/core/ConstraintParams.h>
+
+#include <sofa/simulation/task/MainTaskSchedulerFactory.h>
+#include <sofa/simulation/task/TaskScheduler.h>
 
 namespace sofa::simulation
 {
 
+LinearTimeIntegrator::LinearTimeIntegrator()
+: d_parallelODESolving(initData(&d_parallelODESolving, false, "parallelODESolving", "If true, solves all the ODEs in parallel"))
+{
+    this->addUpdateCallback("parallelODESolving", {&d_parallelODESolving},
+  [this](const core::DataTracker& tracker) -> sofa::core::objectmodel::ComponentState
+  {
+      SOFA_UNUSED(tracker);
+      if (d_parallelODESolving.getValue())
+      {
+          simulation::TaskScheduler* taskScheduler = simulation::MainTaskSchedulerFactory::createInRegistry();
+          assert(taskScheduler);
+
+          if (taskScheduler->getThreadCount() < 1)
+          {
+              taskScheduler->init(0);
+              msg_info() << "Task scheduler initialized on " << taskScheduler->getThreadCount() << " threads";
+          }
+          else
+          {
+              msg_info() << "Task scheduler already initialized on " << taskScheduler->getThreadCount() << " threads";
+          }
+      }
+      return d_componentState.getValue();
+  },
+{});
+}
+
  void LinearTimeIntegrator::integrate(const core::ExecParams* params, SReal dt)
  {
 
+     const SReal startTime = this->getContext()->getTime();
+     const SReal nextTime = startTime + dt;
+
+     sofa::core::MechanicalParams mparams(*params);
+     mparams.setDt(dt);
+
+     behaviorUpdatePosition(params, dt);
+     updateInternalData(params);
+
+     collisionDetection(params);
+
+     beginIntegration(params, dt);
+     {
+         const core::ConstraintParams cparams;
+         accumulateMatrixDeriv(cparams);
+
+         solve(params, dt, d_parallelODESolving.getValue());
+
+         projectPositionAndVelocity(nextTime, mparams);
+         propagateOnlyPositionAndVelocity(nextTime, mparams);
+     }
+     endIntegration(params, dt);
  }
+
+
+
 
 
 

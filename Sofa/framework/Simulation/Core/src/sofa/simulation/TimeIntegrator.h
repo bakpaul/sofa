@@ -23,8 +23,10 @@
 
 #include <sofa/core/objectmodel/BaseComponent.h>
 #include <sofa/core/objectmodel/BaseNode.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
+#include <sofa/simulation/Node.h>
 
-namespace sofa::core::behavior
+namespace sofa::simulation
 {
 
 /**
@@ -38,31 +40,38 @@ namespace sofa::core::behavior
  *  certainly change soon.
  *
  */
-class SOFA_CORE_API BaseTimeIntegrator : public virtual objectmodel::BaseComponent
+class SOFA_CORE_API TimeIntegrator : public sofa::core::behavior::BaseTimeIntegrator
 {
 
 public:
-    SOFA_ABSTRACT_CLASS(BaseTimeIntegrator, objectmodel::BaseComponent);
-    SOFA_BASE_CAST_IMPLEMENTATION(BaseTimeIntegrator)
-
+    SOFA_ABSTRACT_CLASS(TimeIntegrator, sofa::core::behavior::BaseTimeIntegrator);
 
 protected:
-    BaseTimeIntegrator();
-    ~BaseTimeIntegrator() override;
+    TimeIntegrator();
+    ~TimeIntegrator() override;
 
 public:
     void init() override;
 
-    /// Main computation method.
-    ///
-    /// Specify and execute all computations for integrating a timestep, such
-    /// as one or more collisions and integrations stages.
-    virtual void integrate(const core::ExecParams* params, SReal dt) = 0;
-
-    bool insertInNode( objectmodel::BaseNode* node ) override;
-    bool removeInNode( objectmodel::BaseNode* node ) override;
+    // the node where the loop will start processing.
+    SingleLink<TimeIntegrator, simulation::Node, BaseLink::FLAG_STOREPATH> l_node;
 
 
+
+    void solve(const sofa::core::ExecParams* params, SReal dt, bool parallelODESolving) const;
+
+    void behaviorUpdatePosition(const sofa::core::ExecParams* params, SReal dt) const;
+    void updateInternalData(const sofa::core::ExecParams* params) const;
+    void beginIntegration(const sofa::core::ExecParams* params, SReal dt) const;
+    void propagateIntegrateBeginEvent(const sofa::core::ExecParams* params) const;
+    void accumulateMatrixDeriv(sofa::core::ConstraintParams cparams) const;
+    void propagateIntegrateEndEvent(const sofa::core::ExecParams* params) const;
+    void endIntegration(const sofa::core::ExecParams* params, SReal dt) const;
+    void projectPositionAndVelocity(SReal nextTime, const sofa::core::MechanicalParams& mparams) const;
+    void propagateOnlyPositionAndVelocity(SReal nextTime, const sofa::core::MechanicalParams& mparams) const;
+    void propagateCollisionBeginEvent(const sofa::core::ExecParams* params) const;
+    void propagateCollisionEndEvent(const sofa::core::ExecParams* params) const;
+    void collisionDetection(const sofa::core::ExecParams* params) const;
 };
 
 } // namespace sofa::core::behavior
