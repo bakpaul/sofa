@@ -71,6 +71,8 @@ void EulerImplicitIntegrationScheme::init()
     simulation::common::VectorOperations vop(sofa::core::execparams::defaultInstance(), this->getContext());
     reallocSolutionVector(&vop);
     reallocRightHandSideVector(&vop);
+
+
 }
 
 
@@ -96,6 +98,12 @@ void EulerImplicitIntegrationScheme::setupIntegrationStep(const core::ExecParams
 
     reallocSolutionVector(&vop);
     reallocRightHandSideVector(&vop);
+
+    simulation::common::VectorOperations::realloc(vop, m_x0, "v_t", this);
+    simulation::common::VectorOperations::realloc(vop, m_r0, "rhs", this);
+    simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this);
+
+    vop.v_eq(m_x0, mop.mparams.v());
 
 }
 

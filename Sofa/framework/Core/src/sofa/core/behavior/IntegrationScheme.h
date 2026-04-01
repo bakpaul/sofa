@@ -95,18 +95,6 @@ public:
     virtual SReal squaredLastSolution() = 0;
 
 
-    /// By default the integration scheme are meant to solve the equations in velocity
-    virtual SReal getVelocityIntegrationFactor() const
-    {
-        return 1.0;
-    }
-
-    virtual SReal getPositionIntegrationFactor() const
-    {
-        return this->getContext()->getDt();
-    }
-
-
     bool insertInNode( objectmodel::BaseNode* node ) override;
     bool removeInNode( objectmodel::BaseNode* node ) override;
 
@@ -116,6 +104,9 @@ protected:
     SReal m_dt;
     sofa::core::MultiVecCoordId m_xResult;
     sofa::core::MultiVecDerivId m_vResult;
+
+    sofa::core::MultiVecDerivId m_x0, m_r0, m_r1, m_r2;
+
 
 };
 

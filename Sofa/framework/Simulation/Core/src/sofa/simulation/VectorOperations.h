@@ -25,6 +25,7 @@
 #include <sofa/core/behavior/BaseVectorOperations.h>
 #include <sofa/simulation/config.h>
 #include <sofa/simulation/VisitorExecuteFunc.h>
+#include <sofa/core/behavior/MultiVec.h>
 
 namespace sofa
 {
@@ -40,6 +41,18 @@ namespace simulation::common
 class SOFA_SIMULATION_CORE_API VectorOperations : public sofa::core::behavior::BaseVectorOperations
 {
 public:
+
+
+    template <core::VecType vtype>
+    static void realloc(sofa::simulation::common::VectorOperations& vop,
+        core::TMultiVecId<vtype, core::VecAccess::V_WRITE>& id,
+        const std::string& vecIdName,
+        const sofa::core::objectmodel::Base* holder)
+    {
+        sofa::core::behavior::TMultiVec<vtype> vec(&vop, id);
+        vec.realloc(&vop, false, true, core::VecIdProperties{vecIdName, holder->getClassName()});
+        id = vec.id();
+    }
 
     VectorOperations(const sofa::core::ExecParams* params, sofa::core::objectmodel::BaseContext* ctx, bool precomputedTraversalOrder=false);
 
