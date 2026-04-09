@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/component/integrationschemes/VelocityBasedIntegrationScheme.h>
+#include <sofa/simulation/integrationschemes/VelocityBasedIntegrationScheme.h>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/core/behavior/BaseMass.h>
 #include <sofa/core/behavior/LinearSolver.h>
@@ -34,7 +34,7 @@ using sofa::simulation::mechanicalvisitor::MechanicalGetNonDiagonalMassesCountVi
 
 //#define SOFA_NO_VMULTIOP
 
-namespace sofa::component::integrationschemes
+namespace sofa::simulation::integrationschemes
 {
 VelocityBasedIntegrationScheme::VelocityBasedIntegrationScheme()
 {
@@ -98,6 +98,9 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
     sofa::core::behavior::MultiVecDeriv b(&vop, m_r0 );
     b.clear();
 
+    sofa::core::behavior::MultiVecDeriv r1(&vop, m_r1 );
+    r1.clear();
+
 
     {
         SCOPED_TIMER("ComputeForce");
@@ -130,21 +133,25 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
         if (iteration == 0) [[unlikely]]
         {
             computePositionUpdateFromVelocity(m_r1, core::vec_id::write_access::velocity);
-
             auto backV = mop->v();
             mop->setV(m_r1);
             // add the change of force due to stiffness + Rayleigh damping
             mop.addMBKv(b, core::MatricesFactors::M(0.0),
                         core::MatricesFactors::B(0),
                         core::MatricesFactors::K(1.0));
-            b.peq(m_r1, -1.0);
             mop->setV(backV);
         }
 
         if (iteration) [[likely]]
         {
-            computeInverseVelocityUpdate(m_a0, core::vec_id::write_access::velocity);
-            b.peq(m_a0, -1.0);
+            computeAccelerationFromVelocity(m_a0, core::vec_id::write_access::velocity);
+            auto backV = mop->v();
+            mop->setV(m_a0);
+            // add the change of force due to stiffness + Rayleigh damping
+            mop.addMBKv(b, core::MatricesFactors::M(1.0),
+                        core::MatricesFactors::B(0),
+                        core::MatricesFactors::K(0));
+            mop->setV(backV);
         }
 
         msg_info() << "b = " << b;
@@ -191,12 +198,14 @@ void VelocityBasedIntegrationScheme::solveLinearEquation()
  */
 void VelocityBasedIntegrationScheme::updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration)
 {
+    //TODO use alpha
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
 
     sofa::core::behavior::MultiVecCoord pos(&vop, core::vec_id::write_access::position );
     sofa::core::behavior::MultiVecDeriv vel(&vop, core::vec_id::write_access::velocity );
 
     pos.peq(m_unknown, getPositionUpdateDerivedFromVelocity());
+    //TODO make this work with alpha, iteration might be still 0 but we are in the linesearch algo and we don't want to remove this each time...
     if (iteration == 0) [[unlikely]]
     {
         pos.peq(m_r1, -1.0);

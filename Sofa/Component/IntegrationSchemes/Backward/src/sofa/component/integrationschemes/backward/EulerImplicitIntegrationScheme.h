@@ -21,6 +21,7 @@
 ******************************************************************************/
 #pragma once
 #include <sofa/component/integrationschemes/backward/config.h>
+#include <sofa/simulation/integrationschemes/VelocityBasedIntegrationScheme.h>
 #include <sofa/core/behavior/LinearSolverAccessor.h>
 
 #include <sofa/simulation/MechanicalOperations.h>
@@ -101,89 +102,25 @@ namespace sofa::component::integrationschemes::backward
  *
  */
 class SOFA_COMPONENT_INTEGRATIONSCHEMES_BACKWARD_API EulerImplicitIntegrationScheme :
-    public sofa::core::behavior::IntegrationScheme,
-    public sofa::core::behavior::LinearSolverAccessor
+    public sofa::simulation::integrationschemes::VelocityBasedIntegrationScheme
 {
 public:
-    SOFA_CLASS2(EulerImplicitIntegrationScheme, sofa::core::behavior::IntegrationScheme, sofa::core::behavior::LinearSolverAccessor);
+    SOFA_CLASS(EulerImplicitIntegrationScheme, sofa::simulation::integrationschemes::VelocityBasedIntegrationScheme);
 
-    Data<SReal> d_rayleighStiffness; ///< Rayleigh damping coefficient related to stiffness, > 0
-    Data<SReal> d_rayleighMass; ///< Rayleigh damping coefficient related to mass, > 0
-    Data<SReal> d_velocityDamping; ///< Velocity decay coefficient (no decay if null)
-    Data<bool> d_firstOrder; ///< Use backward Euler scheme for first order ODE system, which means that only the first derivative of the DOFs (state) appears in the equation. Higher derivatives are absent
-    Data<bool> d_trapezoidalScheme; ///< Boolean to use the trapezoidal scheme instead of the implicit Euler scheme and get second order accuracy in time (false by default)
-    Data<bool> d_solveConstraint; ///< Apply ConstraintSolver (requires a ConstraintSolver in the same node as this solver, disabled by by default for now)
-    Data<bool> d_threadSafeVisitor; ///< If true, do not use realloc and free visitors in fwdInteractionForceField.
-
-    Data<bool> d_computeResidual; ///< If true, the residual is computed at the end of the solving
-    Data<SReal> d_residual; ///< Residual norm at the end of the free-motion solving
+   Data<bool> d_trapezoidalScheme; ///< Boolean to use the trapezoidal scheme instead of the implicit Euler scheme and get second order accuracy in time (false by default)
 
 protected:
     EulerImplicitIntegrationScheme();
-public:
 
-    virtual void setupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult) override;
+    virtual SReal getPositionUpdateDerivedFromVelocity() const;
+    virtual SReal getInverseVelocityUpdateDerivedFromVelocity() const;
 
-    /**
-     * Compute the system matrix.
-     */
-    virtual void computeLHS() override;
-
-    /**
-    * compute the current RHS.
-    */
-    virtual void computeRHS() override;
-
-    /**
-     * Returns the squared norm of the last evaluation of the RHS
-     */
-    virtual SReal squaredNormRHS() override;
+    //Compute the position update from current value of velocity : dX = x_t - g_x(v_i)
+    virtual void computePositionUpdateFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity);
+    //Compute the acceleration from current value of velocity. This is the implementation of the inverse integration scheme for the velocity
+    virtual void computeAccelerationFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity);
 
 
-    /**
-     * Solve the linear equation from a Newton iteration, i.e. it computes (x^{i+1}-x^i).
-     */
-    virtual void solveLinearEquation() override;
-
-    /**
-     * Once (x^{i+1}-x^i) has been computed, the result is used internally to update the current
-     * guess. It computes x^{i+1} += alpha * dx, where dx is the result of the linear system. It is
-     * not necessary to share the result with the Newton-Raphson method.
-     */
-    virtual void updateVelocityAndPositionFromLinearSolution( SReal alpha) override;
-
-    /**
-     * Compute ||x^{i+1}-x^i||^2
-     */
-    virtual SReal squaredNormDSolution() override;
-
-    /**
-     * Compute ||x^{i+1}||^2
-     */
-    virtual SReal squaredLastSolution() override;
-
-    virtual void init() override;
-    virtual void cleanup() override;
-
-protected:
-
-    sofa::core::MultiVecCoordId m_newPosID;
-    sofa::core::MultiVecDerivId m_newVelID;
-
-    /// the solution vector is stored for warm-start
-    core::behavior::MultiVecDeriv x;
-
-    /// Right-hand side vector
-    core::behavior::MultiVecDeriv b;
-
-    /// Residual vector (optionally computed)
-    core::behavior::MultiVecDeriv m_residual;
-
-    void reallocSolutionVector(sofa::simulation::common::VectorOperations* vop);
-    void reallocRightHandSideVector(sofa::simulation::common::VectorOperations* vop);
-    void reallocResidualVector(sofa::simulation::common::VectorOperations* vop);
-
-    SReal m_trapezoidFactor;
 };
 
 } // namespace sofa::component::integrationschemes::backward

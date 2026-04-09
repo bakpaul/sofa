@@ -20,11 +20,12 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <sofa/component/integrationschemes/config.h>
+#include <sofa/simulation/config.h>
 
 #include <sofa/core/behavior/IntegrationScheme.h>
 #include <sofa/core/behavior/LinearSolver.h>
 #include <sofa/core/behavior/MultiVec.h>
+
 #include <sofa/core/behavior/LinearSolverAccessor.h>
 
 namespace sofa::simulation::common
@@ -33,19 +34,19 @@ class MechanicalOperations;
 class VectorOperations;
 }
 
-namespace sofa::component::integrationschemes
+namespace sofa::simulation::integrationschemes
 {
 
-class SOFA_COMPONENT_INTEGRATIONSCHEMES_API AccelerationBasedIntegrationScheme :
+class SOFA_SIMULATION_CORE_API VelocityBasedIntegrationScheme :
                             public sofa::core::behavior::IntegrationScheme,
                             public sofa::core::behavior::LinearSolverAccessor
 {
 public:
-    SOFA_ABSTRACT_CLASS(AccelerationBasedIntegrationScheme, sofa::core::behavior::IntegrationScheme);
+    SOFA_ABSTRACT_CLASS(VelocityBasedIntegrationScheme, sofa::core::behavior::IntegrationScheme);
 
 protected:
-    AccelerationBasedIntegrationScheme();
-    ~AccelerationBasedIntegrationScheme() = default;
+    VelocityBasedIntegrationScheme();
+    ~VelocityBasedIntegrationScheme() = default;
 
     virtual void doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult);
 
@@ -86,15 +87,16 @@ protected:
     // /**
     //  * Compute ||x^{i+1}||^2
     //  */
-    // virtual SReal squaredLastSolution() = 0;
+    // virtual SReal squaredLastSolution();
 
 
-    virtual SReal getPositionUpdateDerivedFromAcceleration() const = 0;
     virtual SReal getPositionUpdateDerivedFromVelocity() const = 0;
-    virtual SReal getVelocityUpdateDerivedFromAcceleration() const = 0;
+    virtual SReal getInverseVelocityUpdateDerivedFromVelocity() const = 0;
 
-    virtual void computeCurrentAcceleration(sofa::core::MultiVecDerivId& result);
-
+    //Compute the position update from current value of velocity : dX = x_t - g_x(v_i)
+    virtual void computePositionUpdateFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity) = 0;
+    //Compute the acceleration from current value of velocity. This is the implementation of the inverse integration scheme for the velocity
+    virtual void computeAccelerationFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity) = 0;
 
 };
 
