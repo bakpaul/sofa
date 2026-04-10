@@ -53,6 +53,9 @@ void VelocityBasedIntegrationScheme::doSetupIntegrationStep(const core::ExecPara
     simulation::common::VectorOperations::realloc(vop, m_v0, "v0", this);
     simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this);
     simulation::common::VectorOperations::realloc(vop, m_unknown, "dv", this);
+
+    sofa::core::behavior::MultiVecDeriv f(&vop, core::vec_id::write_access::force );
+
 }
 
 /**
@@ -106,6 +109,9 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
         SCOPED_TIMER("ComputeForce");
         mop->setImplicit(true); // this solver is implicit
         // compute the net forces at the beginning of the time step
+
+        //TODO calling computeForce with default values might wipe out the interaction forcefield
+        //contributions, this needs to be fixed.
         mop.computeForce(f);                                                               //f = Kx + Bv
 
         msg_info() << "initial f = " << f;
@@ -132,6 +138,7 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
 
         if (iteration == 0) [[unlikely]]
         {
+            //TODO make sure this is what we want.
             computePositionUpdateFromVelocity(m_r1, core::vec_id::write_access::velocity);
             auto backV = mop->v();
             mop->setV(m_r1);
