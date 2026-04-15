@@ -25,7 +25,7 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/helper/ScopedAdvancedTimer.h>
 #include <sofa/simulation/Node.h>
-#include <sofa/simulation/SetupIntegrationStepVisitor.h>
+#include <sofa/simulation/ComputeLHSVisitor.h>
 #include <sofa/simulation/task/MainTaskSchedulerFactory.h>
 #include <sofa/simulation/task/TaskScheduler.h>
 
@@ -34,39 +34,20 @@
 namespace sofa::simulation
 {
 
-void SetupIntegrationStepVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
+ComputeLHSVisitor::ComputeLHSVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve,
+                     unsigned iteration)
+: IntegrationSchemeBaseVisitor(params, parallelSolve)
+, m_iteration(iteration)
+{
+
+}
+
+void ComputeLHSVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
 {
     helper::ScopedAdvancedTimer timer("Mechanical",node);
-    s->setupIntegrationStep(params, dt, x, v);
+    s->computeLHS(m_iteration);
 }
-
-
-Visitor::Result SetupIntegrationStepVisitor::processNodeTopDown(simulation::Node* node)
-{
-    if (! node->integrationScheme.empty())
-    {
-        for_each(this, node, node->integrationScheme, &SetupIntegrationStepVisitor::processSolver);
-
-        return RESULT_PRUNE;
-    }
-    return RESULT_CONTINUE;
-}
-
-void SetupIntegrationStepVisitor::processNodeBottomUp(simulation::Node*)
-{
-
-}
-
-void SetupIntegrationStepVisitor::setDt(SReal _dt)
-{
-    dt = _dt;
-}
-
-SReal SetupIntegrationStepVisitor::getDt() const
-{
-    return dt;
-}
-
 
 } // namespace sofa::simulation
 

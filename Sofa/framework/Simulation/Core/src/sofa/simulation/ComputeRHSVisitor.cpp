@@ -25,7 +25,7 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/helper/ScopedAdvancedTimer.h>
 #include <sofa/simulation/Node.h>
-#include <sofa/simulation/SetupIntegrationStepVisitor.h>
+#include <sofa/simulation/ComputeRHSVisitor.h>
 #include <sofa/simulation/task/MainTaskSchedulerFactory.h>
 #include <sofa/simulation/task/TaskScheduler.h>
 
@@ -34,16 +34,37 @@
 namespace sofa::simulation
 {
 
-void SetupIntegrationStepVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
+
+ComputeRHSVisitor::ComputeRHSVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve,
+                     unsigned iteration)
+: IntegrationSchemeBaseVisitor(params, parallelSolve)
+, m_iteration(iteration)
 {
-    helper::ScopedAdvancedTimer timer("Mechanical",node);
-    s->setupIntegrationStep(params, dt, x, v);
+
 }
 
 
-Visitor::Result SetupIntegrationStepVisitor::processNodeTopDown(simulation::Node* node)
+void ComputeRHSVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
 {
-    if (! node->integrationScheme.empty())
+    helper::ScopedAdvancedTimer timer("Mechanical",node);
+    s->computeRHS(m_iteration);
+}
+
+
+void ComputeRHSVisitor::fwdInteractionForceField(Node* node, core::behavior::BaseInteractionForceField* forceField)
+{
+    SOFA_UNUSED(node);
+
+    const core::MultiVecDerivId ffId = core::vec_id::write_access::externalForce;
+    core::MechanicalParams mparams;
+    mparams.setDt(dt);
+    forceField->addForce(&mparams, ffId);
+}
+
+Visitor::Result ComputeRHSVisitor::processNodeTopDown(simulation::Node* node)
+{
+    if (! node->solver.empty())
     {
         if (m_parallelSolve)
         {
@@ -58,25 +79,9 @@ Visitor::Result SetupIntegrationStepVisitor::processNodeTopDown(simulation::Node
 
     if (m_computeForceIsolatedInteractionForceFields)
     {
-        for_each(this, node, node->interactionForceField, &SolveVisitor::fwdInteractionForceField);
+        for_each(this, node, node->interactionForceField, &ComputeRHSVisitor::fwdInteractionForceField);
     }
     return RESULT_CONTINUE;
-
-}
-
-void SetupIntegrationStepVisitor::processNodeBottomUp(simulation::Node*)
-{
-
-}
-
-void SetupIntegrationStepVisitor::setDt(SReal _dt)
-{
-    dt = _dt;
-}
-
-SReal SetupIntegrationStepVisitor::getDt() const
-{
-    return dt;
 }
 
 

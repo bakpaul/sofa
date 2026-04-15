@@ -45,7 +45,6 @@ set(HEADER_FILES
     ${SRC_ROOT}/SceneLoaderFactory.h
     ${SRC_ROOT}/Simulation.h
     ${SRC_ROOT}/SimulationLoop.h
-    ${SRC_ROOT}/SolveVisitor.h
     ${SRC_ROOT}/StateChangeVisitor.h
     ${SRC_ROOT}/TopologyChangeVisitor.h
     ${SRC_ROOT}/UpdateBoundingBoxVisitor.h
@@ -69,6 +68,14 @@ set(HEADER_FILES
     ${SRC_ROOT}/SceneCheckMainRegistry.h
     ${SRC_ROOT}/MappingGraph.h
     ${SRC_ROOT}/TimeIntegrator.h
+
+    ${SRC_ROOT}/ComputeLHSVisitor.h
+    ${SRC_ROOT}/ComputeRHSVisitor.h
+    ${SRC_ROOT}/IntegrationSchemeBaseVisitor.h
+    ${SRC_ROOT}/SetupIntegrationStepVisitor.h
+    ${SRC_ROOT}/SolveLinearSystemVisitor.h
+    ${SRC_ROOT}/SquaredNormRHSVisitor.h
+    ${SRC_ROOT}/UpdateVelAndPosVisitor.h
 
     ${SRC_ROOT}/events/BuildConstraintSystemEndEvent.h
     ${SRC_ROOT}/events/SimulationInitDoneEvent.h
@@ -193,7 +200,6 @@ set(SOURCE_FILES
     ${SRC_ROOT}/SceneCheckRegistry.cpp
     ${SRC_ROOT}/SceneCheckMainRegistry.cpp
     ${SRC_ROOT}/Simulation.cpp
-    ${SRC_ROOT}/SolveVisitor.cpp
     ${SRC_ROOT}/StateChangeVisitor.cpp
     ${SRC_ROOT}/TopologyChangeVisitor.cpp
     ${SRC_ROOT}/UpdateBoundingBoxVisitor.cpp
@@ -212,6 +218,14 @@ set(SOURCE_FILES
     ${SRC_ROOT}/fwd.cpp
     ${SRC_ROOT}/BaseSimulationExporter.cpp
     ${SRC_ROOT}/LinearTimeIntegrator.cpp
+
+    ${SRC_ROOT}/ComputeLHSVisitor.cpp
+    ${SRC_ROOT}/ComputeRHSVisitor.cpp
+    ${SRC_ROOT}/IntegrationSchemeBaseVisitor.cpp
+    ${SRC_ROOT}/SetupIntegrationStepVisitor.cpp
+    ${SRC_ROOT}/SolveLinearSystemVisitor.cpp
+    ${SRC_ROOT}/SquaredNormRHSVisitor.cpp
+    ${SRC_ROOT}/UpdateVelAndPosVisitor.cpp
 
     ${SRC_ROOT}/events/BuildConstraintSystemEndEvent.cpp
     ${SRC_ROOT}/events/SimulationInitDoneEvent.cpp

@@ -21,7 +21,7 @@
 ******************************************************************************/
 #pragma once
 
-#include <sofa/simulation/Visitor.h>
+#include <sofa/simulation/IntegrationSchemeBaseVisitor.h>
 #include <sofa/core/MultiVecId.h>
 #include <sofa/simulation/task/CpuTask.h>
 
@@ -30,41 +30,18 @@
 namespace sofa::simulation
 {
 
-class SetupIntegrationStepVisitorTask;
-
 /** Used by the animation loop: send the solve signal to the others solvers
 This visitor is able to run the solvers sequentially or concurrently.
  */
-class SOFA_SIMULATION_CORE_API SetupIntegrationStepVisitor : public Visitor
+class SOFA_SIMULATION_CORE_API SolveLinearSystemVisitor : public IntegrationSchemeBaseVisitor
 {
 public:
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params,
-                 SReal _dt,
-                 sofa::core::MultiVecCoordId X = sofa::core::vec_id::write_access::position,
-                 sofa::core::MultiVecDerivId V = sofa::core::vec_id::write_access::velocity);
+    SolveLinearSystemVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve );
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free);
+    void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b) override;
 
-    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b);
-    Result processNodeTopDown(simulation::Node* node) override;
-    void processNodeBottomUp(simulation::Node* /*node*/) override;
-
-    /// Specify whether this action can be parallelized.
-    bool isThreadSafe() const override { return true; }
-
-    /// Return a category name for this action.
-    /// Only used for debugging / profiling purposes
-    const char* getCategoryName() const override { return "behavior update position"; }
-    const char* getClassName() const override { return "SetupIntegrationStepVisitor"; }
-
-    void setDt(SReal _dt);
-    SReal getDt() const;
-
-protected:
-    SReal dt;
-    sofa::core::MultiVecCoordId x;
-    sofa::core::MultiVecDerivId v;
 };
 
 } // namespace sofa

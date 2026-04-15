@@ -26,6 +26,17 @@
 #include <sofa/simulation/task/MainTaskSchedulerFactory.h>
 #include <sofa/simulation/task/TaskScheduler.h>
 
+
+
+#include <sofa/simulation//ComputeLHSVisitor.h>
+#include <sofa/simulation//ComputeRHSVisitor.h>
+#include <sofa/simulation//SetupIntegrationStepVisitor.h>
+#include <sofa/simulation//SolveLinearSystemVisitor.h>
+#include <sofa/simulation//SquaredNormRHSVisitor.h>
+#include <sofa/simulation//UpdateVelAndPosVisitor.h>
+
+#include <sofa/helper/ScopedAdvancedTimer.h>
+
 namespace sofa::simulation
 {
 
@@ -85,6 +96,26 @@ LinearTimeIntegrator::LinearTimeIntegrator()
 
 
 
+void LinearTimeIntegrator::solve(const sofa::core::ExecParams* params, SReal dt, bool parallelODESolving) const
+{
+    constexpr bool usefreeVecIds = false;
+    constexpr bool computeForceIsolatedInteractionForceFields = true;
+    SCOPED_TIMER("solve");
+    simulation::SetupIntegrationStepVisitor setupIntegration(params, dt, usefreeVecIds);
+    setupIntegration.execute(l_node);
+
+    simulation::ComputeLHSVisitor ComputeLHSVisitor(params, parallelODESolving, 0);
+    ComputeLHSVisitor.execute(l_node);
+
+    simulation::ComputeRHSVisitor ComputeRHSVisitor(params, parallelODESolving, 0);
+    ComputeRHSVisitor.execute(l_node);
+
+    simulation::SolveLinearSystemVisitor SolveLinearSystemVisitor(params, parallelODESolving);
+    SolveLinearSystemVisitor.execute(l_node);
+
+    simulation::UpdateVelAndPosVisitor UpdateVelAndPosVisitor(params, parallelODESolving, 0, 1.0);
+    UpdateVelAndPosVisitor.execute(l_node);
+}
 
 
 

@@ -37,6 +37,7 @@ public:
 
     virtual void integrate(const sofa::core::ExecParams* params, SReal dt) override;
 
+    virtual void solve(const sofa::core::ExecParams* params, SReal dt, bool parallelODESolving) const override;
 };
 
 }

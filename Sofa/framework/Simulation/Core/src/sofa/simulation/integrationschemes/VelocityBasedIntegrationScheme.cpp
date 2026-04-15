@@ -221,17 +221,6 @@ void VelocityBasedIntegrationScheme::updateVelocityAndPositionFromLinearSolution
     vel.peq(m_unknown);
 }
 
-/**
- * Compute ||x^{i+1}-x^i||^2
- */
-SReal VelocityBasedIntegrationScheme::squaredNormDSolution()
-{
-    sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
-
-    core::behavior::MultiVecDeriv dv(&vop, m_unknown);
-
-    return dv.dot(dv);
-}
 
 
 } // namespace sofa::component::integrationschemes::forward

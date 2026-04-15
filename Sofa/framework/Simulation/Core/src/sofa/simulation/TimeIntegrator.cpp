@@ -35,7 +35,6 @@
 #include <sofa/simulation/IntegrateBeginEvent.h>
 #include <sofa/simulation/IntegrateEndEvent.h>
 #include <sofa/simulation/PropagateEventVisitor.h>
-#include <sofa/simulation/SolveVisitor.h>
 #include <sofa/simulation/mechanicalvisitor/MechanicalAccumulateMatrixDeriv.h>
 #include <sofa/simulation/mechanicalvisitor/MechanicalBeginIntegrationVisitor.h>
 #include <sofa/simulation/mechanicalvisitor/MechanicalEndIntegrationVisitor.h>
@@ -169,14 +168,6 @@ void TimeIntegrator::collisionDetection(const core::ExecParams* params) const
 }
 
 
-void TimeIntegrator::solve(const core::ExecParams* params, SReal dt, bool parallelODESolving) const
-{
-    constexpr bool usefreeVecIds = false;
-    constexpr bool computeForceIsolatedInteractionForceFields = true;
-    SCOPED_TIMER("solve");
-    simulation::SolveVisitor freeMotion(params, dt, usefreeVecIds, parallelODESolving, computeForceIsolatedInteractionForceFields);
-    freeMotion.execute(l_node);
-}
 
 } // namespace sofa::core::behavior
 

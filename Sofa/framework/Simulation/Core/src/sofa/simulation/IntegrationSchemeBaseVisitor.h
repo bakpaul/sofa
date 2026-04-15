@@ -30,25 +30,21 @@
 namespace sofa::simulation
 {
 
-class SetupIntegrationStepVisitorTask;
+class IntegrationSchemeBaseVisitorTask;
 
 /** Used by the animation loop: send the solve signal to the others solvers
 This visitor is able to run the solvers sequentially or concurrently.
  */
-class SOFA_SIMULATION_CORE_API SetupIntegrationStepVisitor : public Visitor
+class SOFA_SIMULATION_CORE_API IntegrationSchemeBaseVisitor : public Visitor
 {
 public:
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params,
-                 SReal _dt,
-                 sofa::core::MultiVecCoordId X = sofa::core::vec_id::write_access::position,
-                 sofa::core::MultiVecDerivId V = sofa::core::vec_id::write_access::velocity);
+    IntegrationSchemeBaseVisitor(const sofa::core::ExecParams* params,
+                 bool _parallelSolve = false);
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free);
-
-    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b);
+    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b) = 0;
     Result processNodeTopDown(simulation::Node* node) override;
-    void processNodeBottomUp(simulation::Node* /*node*/) override;
+    void processNodeBottomUp(simulation::Node*) override;
 
     /// Specify whether this action can be parallelized.
     bool isThreadSafe() const override { return true; }
@@ -56,44 +52,50 @@ public:
     /// Return a category name for this action.
     /// Only used for debugging / profiling purposes
     const char* getCategoryName() const override { return "behavior update position"; }
-    const char* getClassName() const override { return "SetupIntegrationStepVisitor"; }
-
-    void setDt(SReal _dt);
-    SReal getDt() const;
+    const char* getClassName() const override { return "IntegrationSchemeBaseVisitor"; }
 
 protected:
-    SReal dt;
-    sofa::core::MultiVecCoordId x;
-    sofa::core::MultiVecDerivId v;
+
+    bool m_parallelSolve {false };
+    bool m_computeForceIsolatedInteractionForceFields { false };
+
+    /// Container for the parallel tasks
+    std::list<IntegrationSchemeBaseVisitorTask> m_tasks;
+
+    /// Status for the parallel tasks
+    sofa::simulation::CpuTask::Status m_status;
+
+    /// Function called if the solvers run sequentially
+    void sequentialSolve(simulation::Node* node);
+
+    /// Function called if the solvers run concurrently
+    /// Solving tasks are added to the list of tasks and start to run.
+    /// However, there is no check that the tasks finished. This is
+    /// done later, once all nodes have been traversed.
+    void parallelSolve(simulation::Node* node);
+
+    /// Initialize the task scheduler if it is not done already
+    void initializeTaskScheduler();
 };
 
 /// A task to provide to a task scheduler in which a solver solves
-class ComputeLHSVisitorTask : public sofa::simulation::CpuTask
+class IntegrationSchemeBaseVisitorTask : public sofa::simulation::CpuTask
 {
 public:
-    ComputeLHSVisitorTask(sofa::simulation::CpuTask::Status* status,
-                     sofa::core::behavior::OdeSolver* odeSolver,
-                     const sofa::core::ExecParams* params,
-                     SReal dt,
-                     sofa::core::MultiVecCoordId x,
-                     sofa::core::MultiVecDerivId v)
+    IntegrationSchemeBaseVisitorTask(sofa::simulation::CpuTask::Status* status,
+                     sofa::core::behavior::IntegrationScheme* odeSolver,
+                     const std::function<void (sofa::core::behavior::IntegrationScheme*)>& task)
     : sofa::simulation::CpuTask(status)
     , m_solver(odeSolver)
-    , m_execParams(params)
-    , m_dt(dt)
-    , m_x(x)
-    , m_v(v)
+    , m_task(task)
     {}
 
-    ~ComputeLHSVisitorTask() override = default;
+    ~IntegrationSchemeBaseVisitorTask() override = default;
     sofa::simulation::Task::MemoryAlloc run() final;
 
 private:
-    sofa::core::behavior::OdeSolver* m_solver {nullptr};
-    const sofa::core::ExecParams* m_execParams {nullptr};
-    SReal m_dt;
-    sofa::core::MultiVecCoordId m_x;
-    sofa::core::MultiVecDerivId m_v;
+    sofa::core::behavior::IntegrationScheme* m_solver {nullptr};
+    const std::function<void (sofa::core::behavior::IntegrationScheme*)>  m_task;
 };
 
 } // namespace sofa

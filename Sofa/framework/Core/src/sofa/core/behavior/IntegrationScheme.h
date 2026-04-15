@@ -86,16 +86,6 @@ public:
      */
     virtual void updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration = 0) = 0;
 
-    /**
-     * Compute ||x^{i+1}-x^i||^2
-     */
-    virtual SReal squaredNormDSolution() = 0;
-
-    // /**
-    //  * Compute ||x^{i+1}||^2
-    //  */
-    // virtual SReal squaredLastSolution() = 0;
-
 
     bool insertInNode( objectmodel::BaseNode* node ) override;
     bool removeInNode( objectmodel::BaseNode* node ) override;

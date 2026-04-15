@@ -30,31 +30,19 @@
 namespace sofa::simulation
 {
 
-class SetupIntegrationStepVisitorTask;
-
 /** Used by the animation loop: send the solve signal to the others solvers
 This visitor is able to run the solvers sequentially or concurrently.
  */
-class SOFA_SIMULATION_CORE_API SetupIntegrationStepVisitor : public IntegrationSchemeBaseVisitor
+class SOFA_SIMULATION_CORE_API SquaredNormRHSVisitor : public IntegrationSchemeBaseVisitor
 {
 public:
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params,
-                 SReal _dt,
-                 sofa::core::MultiVecCoordId X = sofa::core::vec_id::write_access::position,
-                 sofa::core::MultiVecDerivId V = sofa::core::vec_id::write_access::velocity);
+    SquaredNormRHSVisitor(const sofa::core::ExecParams* params);
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free);
-
-    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b);
-
-    void setDt(SReal _dt);
-    SReal getDt() const;
+    void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b) override;
 
 protected:
-    SReal dt;
-    sofa::core::MultiVecCoordId x;
-    sofa::core::MultiVecDerivId v;
+    SReal m_residue;
 };
 
 } // namespace sofa

@@ -79,17 +79,6 @@ protected:
      */
     virtual void updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration = 0);
 
-    /**
-     * Compute ||x^{i+1}-x^i||^2
-     */
-    virtual SReal squaredNormDSolution();
-
-    // /**
-    //  * Compute ||x^{i+1}||^2
-    //  */
-    // virtual SReal squaredLastSolution();
-
-
     virtual SReal getPositionUpdateDerivedFromVelocity() const = 0;
     virtual SReal getInverseVelocityUpdateDerivedFromVelocity() const = 0;
 

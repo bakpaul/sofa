@@ -30,31 +30,27 @@
 namespace sofa::simulation
 {
 
-class SetupIntegrationStepVisitorTask;
+class ComputeRHSVisitorTask;
 
 /** Used by the animation loop: send the solve signal to the others solvers
 This visitor is able to run the solvers sequentially or concurrently.
  */
-class SOFA_SIMULATION_CORE_API SetupIntegrationStepVisitor : public IntegrationSchemeBaseVisitor
+class SOFA_SIMULATION_CORE_API ComputeRHSVisitor : public IntegrationSchemeBaseVisitor
 {
 public:
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params,
-                 SReal _dt,
-                 sofa::core::MultiVecCoordId X = sofa::core::vec_id::write_access::position,
-                 sofa::core::MultiVecDerivId V = sofa::core::vec_id::write_access::velocity);
+    ComputeRHSVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve,
+                     unsigned iteration);
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free);
+    void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b) override;
+    Result processNodeTopDown(simulation::Node* node) override;
+    void fwdInteractionForceField(Node* node, core::behavior::BaseInteractionForceField* forceField);
 
-    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b);
 
-    void setDt(SReal _dt);
-    SReal getDt() const;
 
 protected:
-    SReal dt;
-    sofa::core::MultiVecCoordId x;
-    sofa::core::MultiVecDerivId v;
+    unsigned m_iteration;
 };
 
 } // namespace sofa

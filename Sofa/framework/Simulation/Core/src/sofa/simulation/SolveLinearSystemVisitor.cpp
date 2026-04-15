@@ -19,42 +19,33 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
+#include <sofa/core/MechanicalParams.h>
+#include <sofa/core/behavior/BaseInteractionForceField.h>
+#include <sofa/core/behavior/OdeSolver.h>
+#include <sofa/helper/AdvancedTimer.h>
+#include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/simulation/Node.h>
+#include <sofa/simulation/SolveLinearSystemVisitor.h>
+#include <sofa/simulation/task/MainTaskSchedulerFactory.h>
+#include <sofa/simulation/task/TaskScheduler.h>
 
-#include <sofa/simulation/IntegrationSchemeBaseVisitor.h>
-#include <sofa/core/MultiVecId.h>
-#include <sofa/simulation/task/CpuTask.h>
-
-#include <list>
+#include "sofa/core/behavior/IntegrationScheme.h"
 
 namespace sofa::simulation
 {
 
-class SetupIntegrationStepVisitorTask;
-
-/** Used by the animation loop: send the solve signal to the others solvers
-This visitor is able to run the solvers sequentially or concurrently.
- */
-class SOFA_SIMULATION_CORE_API SetupIntegrationStepVisitor : public IntegrationSchemeBaseVisitor
+SolveLinearSystemVisitor::SolveLinearSystemVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve)
+: IntegrationSchemeBaseVisitor(params, parallelSolve)
 {
-public:
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params,
-                 SReal _dt,
-                 sofa::core::MultiVecCoordId X = sofa::core::vec_id::write_access::position,
-                 sofa::core::MultiVecDerivId V = sofa::core::vec_id::write_access::velocity);
+}
 
-    SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free);
+void SolveLinearSystemVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
+{
+    helper::ScopedAdvancedTimer timer("Mechanical",node);
+    s->solveLinearEquation();
+}
 
-    virtual void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b);
+} // namespace sofa::simulation
 
-    void setDt(SReal _dt);
-    SReal getDt() const;
-
-protected:
-    SReal dt;
-    sofa::core::MultiVecCoordId x;
-    sofa::core::MultiVecDerivId v;
-};
-
-} // namespace sofa

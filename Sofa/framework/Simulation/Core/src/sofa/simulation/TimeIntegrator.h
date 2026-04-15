@@ -58,7 +58,7 @@ public:
 
 
 
-    void solve(const sofa::core::ExecParams* params, SReal dt, bool parallelODESolving) const;
+    virtual void solve(const sofa::core::ExecParams* params, SReal dt, bool parallelODESolving) const = 0;
 
     void behaviorUpdatePosition(const sofa::core::ExecParams* params, SReal dt) const;
     void updateInternalData(const sofa::core::ExecParams* params) const;

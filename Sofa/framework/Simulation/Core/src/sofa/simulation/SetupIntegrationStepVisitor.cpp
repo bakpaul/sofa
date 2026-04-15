@@ -41,22 +41,6 @@ void SetupIntegrationStepVisitor::processSolver(simulation::Node* node, sofa::co
 }
 
 
-Visitor::Result SetupIntegrationStepVisitor::processNodeTopDown(simulation::Node* node)
-{
-    if (! node->integrationScheme.empty())
-    {
-        for_each(this, node, node->integrationScheme, &SetupIntegrationStepVisitor::processSolver);
-
-        return RESULT_PRUNE;
-    }
-    return RESULT_CONTINUE;
-}
-
-void SetupIntegrationStepVisitor::processNodeBottomUp(simulation::Node*)
-{
-
-}
-
 void SetupIntegrationStepVisitor::setDt(SReal _dt)
 {
     dt = _dt;
@@ -70,14 +54,15 @@ SReal SetupIntegrationStepVisitor::getDt() const
 
 SetupIntegrationStepVisitor::SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt,
                                                          sofa::core::MultiVecCoordId X, sofa::core::MultiVecDerivId V)
-: Visitor(params)
+: IntegrationSchemeBaseVisitor(params, false)
 , dt(_dt)
 , x(X)
 , v(V)
 {}
 
 SetupIntegrationStepVisitor::SetupIntegrationStepVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free)
-: Visitor(params), dt(_dt)
+: IntegrationSchemeBaseVisitor(params, false)
+, dt(_dt)
 {
     if(free)
     {
