@@ -27,6 +27,8 @@
 #include <sofa/simulation/UpdateContextVisitor.h>
 #include <sofa/simulation/UpdateMappingVisitor.h>
 #include <sofa/simulation/PropagateEventVisitor.h>
+#include <sofa/simulation/BehaviorUpdatePositionVisitor.h>
+#include <sofa/simulation/UpdateInternalDataVisitor.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
 #include <sofa/simulation/AnimateEndEvent.h>
 #include <sofa/simulation/UpdateMappingEndEvent.h>
@@ -36,8 +38,19 @@
 #include <sofa/helper/AdvancedTimer.h>
 
 #include <sofa/core/visual/VisualParams.h>
-
+#include <sofa/simulation/CollisionBeginEvent.h>
+#include <sofa/simulation/CollisionEndEvent.h>
+#include <sofa/simulation/CollisionVisitor.h>
+#include <sofa/simulation/IntegrateBeginEvent.h>
+#include <sofa/simulation/IntegrateEndEvent.h>
+#include <sofa/simulation/task/MainTaskSchedulerFactory.h>
+#include <sofa/simulation/SolveVisitor.h>
 #include <sofa/simulation/task/TaskScheduler.h>
+#include <sofa/simulation/mechanicalvisitor/MechanicalAccumulateMatrixDeriv.h>
+#include <sofa/simulation/mechanicalvisitor/MechanicalBeginIntegrationVisitor.h>
+#include <sofa/simulation/mechanicalvisitor/MechanicalEndIntegrationVisitor.h>
+#include <sofa/simulation/mechanicalvisitor/MechanicalProjectPositionAndVelocityVisitor.h>
+#include <sofa/simulation/mechanicalvisitor/MechanicalPropagateOnlyPositionAndVelocityVisitor.h>
 
 
 namespace sofa::simulation
@@ -58,13 +71,34 @@ This loop triggers the following steps:
 
 DefaultAnimationLoop::DefaultAnimationLoop(simulation::Node* _m_node)
     : Inherit()
+    , d_parallelODESolving(initData(&d_parallelODESolving, false, "parallelODESolving", "If true, solves all the ODEs in parallel"))
 {
     SOFA_UNUSED(_m_node);
+    this->addUpdateCallback("parallelODESolving", {&d_parallelODESolving},
+    [this](const core::DataTracker& tracker) -> sofa::core::objectmodel::ComponentState
+    {
+        SOFA_UNUSED(tracker);
+        if (d_parallelODESolving.getValue())
+        {
+            simulation::TaskScheduler* taskScheduler = simulation::MainTaskSchedulerFactory::createInRegistry();
+            assert(taskScheduler);
+
+            if (taskScheduler->getThreadCount() < 1)
+            {
+                taskScheduler->init(0);
+                msg_info() << "Task scheduler initialized on " << taskScheduler->getThreadCount() << " threads";
+            }
+            else
+            {
+                msg_info() << "Task scheduler already initialized on " << taskScheduler->getThreadCount() << " threads";
+            }
+        }
+        return d_componentState.getValue();
+    },
+{});
 }
 
 DefaultAnimationLoop::~DefaultAnimationLoop() = default;
-
-using DefaultTimeIntegrator = sofa::simulation::LinearTimeIntegrator;
 
 void DefaultAnimationLoop::init()
 {
@@ -77,36 +111,6 @@ void DefaultAnimationLoop::init()
     {
         this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Valid);
     }
-
-
-    if (!l_baseTimeIntegrator)
-    {
-        l_baseTimeIntegrator.set(this->getContext()->get<sofa::core::behavior::BaseTimeIntegrator>(core::objectmodel::BaseContext::SearchDown));
-        if (!l_baseTimeIntegrator)
-        {
-            if (const auto timeIntegrator = sofa::core::objectmodel::New<DefaultTimeIntegrator>())
-            {
-                getContext()->addObject(timeIntegrator);
-                timeIntegrator->setName( this->getContext()->getNameHelper().resolveName(timeIntegrator->getClassName(), {}));
-                timeIntegrator->f_printLog.setValue(this->f_printLog.getValue());
-                l_baseTimeIntegrator.set(timeIntegrator.get());
-
-                msg_warning() << "A ConstraintSolver is required by " << this->getClassName() << " but has not been found:"
-                    " a default " << timeIntegrator->getClassName() << " is automatically added in the scene for you. To remove this warning, add"
-                    " a ConstraintSolver in the scene. The list of available constraint solvers is: "
-                    << core::ObjectFactory::getInstance()->listClassesDerivedFrom<sofa::core::behavior::BaseTimeIntegrator>();
-            }
-            else
-            {
-                msg_fatal() << "A ConstraintSolver is required by " << this->getClassName() << " but has not been found:"
-                    " a default " << DefaultTimeIntegrator::GetClass()->className << " could not be automatically added in the scene. To remove this error, add"
-                    " a ConstraintSolver in the scene. The list of available constraint solvers is: "
-                    << core::ObjectFactory::getInstance()->listClassesDerivedFrom<sofa::core::behavior::BaseTimeIntegrator>();
-                this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Invalid);
-                return;
-            }
-        }
-    }
 }
 
 void DefaultAnimationLoop::setNode(simulation::Node* n)
@@ -114,6 +118,18 @@ void DefaultAnimationLoop::setNode(simulation::Node* n)
     l_node.set(n);
 }
 
+void DefaultAnimationLoop::behaviorUpdatePosition(const core::ExecParams* params, const SReal dt) const
+{
+    SCOPED_TIMER("BehaviorUpdatePositionVisitor");
+    BehaviorUpdatePositionVisitor beh(params, dt);
+    m_node->execute(beh);
+}
+
+void DefaultAnimationLoop::updateInternalData(const core::ExecParams* params) const
+{
+    SCOPED_TIMER("UpdateInternalDataVisitor");
+    m_node->execute<UpdateInternalDataVisitor>(params);
+}
 
 void DefaultAnimationLoop::updateSimulationContext(const core::ExecParams* params, const SReal dt, const SReal startTime) const
 {
@@ -157,6 +173,129 @@ void DefaultAnimationLoop::propagateAnimateBeginEvent(const core::ExecParams* pa
     m_node->execute(act);
 }
 
+void DefaultAnimationLoop::beginIntegration(const core::ExecParams* params, SReal dt) const
+{
+    propagateIntegrateBeginEvent(params);
+
+    SCOPED_TIMER("beginIntegration");
+    mechanicalvisitor::MechanicalBeginIntegrationVisitor beginVisitor(params, dt);
+    m_node->execute(&beginVisitor);
+}
+
+void DefaultAnimationLoop::propagateIntegrateBeginEvent(const core::ExecParams* params) const
+{
+    SCOPED_TIMER("propagateIntegrateBeginEvent");
+    IntegrateBeginEvent evBegin;
+    PropagateEventVisitor eventPropagation( params, &evBegin);
+    eventPropagation.execute(m_node);
+}
+
+void DefaultAnimationLoop::accumulateMatrixDeriv(const core::ConstraintParams cparams) const
+{
+    SCOPED_TIMER("accumulateMatrixDeriv");
+    mechanicalvisitor::MechanicalAccumulateMatrixDeriv accumulateMatrixDeriv(&cparams, core::vec_id::write_access::constraintJacobian);
+    accumulateMatrixDeriv.execute(m_node);
+}
+
+void DefaultAnimationLoop::solve(const core::ExecParams* params, SReal dt) const
+{
+    constexpr bool usefreeVecIds = false;
+    constexpr bool computeForceIsolatedInteractionForceFields = true;
+    SCOPED_TIMER("solve");
+    simulation::SolveVisitor freeMotion(params, dt, usefreeVecIds, d_parallelODESolving.getValue(), computeForceIsolatedInteractionForceFields);
+    freeMotion.execute(m_node);
+}
+
+void DefaultAnimationLoop::propagateIntegrateEndEvent(const core::ExecParams* params) const
+{
+    SCOPED_TIMER("propagateIntegrateEndEvent");
+    IntegrateEndEvent evBegin;
+    PropagateEventVisitor eventPropagation(params, &evBegin);
+    eventPropagation.execute(m_node);
+}
+
+void DefaultAnimationLoop::endIntegration(const core::ExecParams* params, const SReal dt) const
+{
+    {
+        SCOPED_TIMER("endIntegration");
+        mechanicalvisitor::MechanicalEndIntegrationVisitor endVisitor(params, dt);
+        m_node->execute(&endVisitor);
+    }
+
+    propagateIntegrateEndEvent(params);
+}
+
+void DefaultAnimationLoop::projectPositionAndVelocity(const SReal nextTime, const sofa::core::MechanicalParams& mparams) const
+{
+    SCOPED_TIMER("projectPositionAndVelocity");
+    mechanicalvisitor::MechanicalProjectPositionAndVelocityVisitor(&mparams, nextTime,
+                                                                   sofa::core::vec_id::write_access::position, sofa::core::vec_id::write_access::velocity
+    ).execute( m_node );
+}
+
+void DefaultAnimationLoop::propagateOnlyPositionAndVelocity(const SReal nextTime, const sofa::core::MechanicalParams& mparams) const
+{
+    SCOPED_TIMER("propagateOnlyPositionAndVelocity");
+    mechanicalvisitor::MechanicalPropagateOnlyPositionAndVelocityVisitor(&mparams, nextTime,
+                                                                         core::vec_id::write_access::position,
+                                                                         core::vec_id::write_access::velocity).execute( m_node );
+}
+
+void DefaultAnimationLoop::propagateCollisionBeginEvent(const core::ExecParams* params) const
+{
+    SCOPED_TIMER("CollisionBeginEvent");
+    CollisionBeginEvent evBegin;
+    PropagateEventVisitor eventPropagation( params, &evBegin);
+    eventPropagation.execute(m_node);
+}
+
+void DefaultAnimationLoop::propagateCollisionEndEvent(const core::ExecParams* params) const
+{
+    SCOPED_TIMER("CollisionEndEvent");
+    CollisionEndEvent evEnd;
+    PropagateEventVisitor eventPropagation( params, &evEnd);
+    eventPropagation.execute(m_node);
+}
+
+void DefaultAnimationLoop::collisionDetection(const core::ExecParams* params) const
+{
+    propagateCollisionBeginEvent(params);
+
+    {
+        SCOPED_TIMER("collision");
+        CollisionVisitor act(params);
+        m_node->execute(&act);
+    }
+
+    propagateCollisionEndEvent(params);
+}
+
+void DefaultAnimationLoop::animate(const core::ExecParams* params, SReal dt) const
+{
+    const SReal startTime = m_node->getTime();
+    const SReal nextTime = startTime + dt;
+
+    sofa::core::MechanicalParams mparams(*params);
+    mparams.setDt(dt);
+
+    behaviorUpdatePosition(params, dt);
+    updateInternalData(params);
+
+    collisionDetection(params);
+
+    beginIntegration(params, dt);
+    {
+        const core::ConstraintParams cparams;
+        accumulateMatrixDeriv(cparams);
+
+        solve(params, dt);
+
+        projectPositionAndVelocity(nextTime, mparams);
+        propagateOnlyPositionAndVelocity(nextTime, mparams);
+    }
+    endIntegration(params, dt);
+}
+
 void DefaultAnimationLoop::step(const core::ExecParams* params, SReal dt)
 {
     if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
@@ -177,7 +316,7 @@ void DefaultAnimationLoop::step(const core::ExecParams* params, SReal dt)
 #endif
 
     propagateAnimateBeginEvent(params, dt);
-    l_baseTimeIntegrator->integrate(params, dt);
+    animate(params, dt);
     updateSimulationContext(params, dt, m_node->getTime());
     propagateAnimateEndEvent(params, dt);
 

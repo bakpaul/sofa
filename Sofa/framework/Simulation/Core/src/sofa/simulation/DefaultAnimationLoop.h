@@ -23,7 +23,6 @@
 
 #include <sofa/core/objectmodel/BaseComponent.h>
 #include <sofa/core/behavior/BaseAnimationLoop.h>
-#include <sofa/simulation/LinearTimeIntegrator.h>
 
 #include <sofa/simulation/fwd.h>
 
@@ -54,11 +53,11 @@ protected:
 
     ~DefaultAnimationLoop() override;
 
-
-    SingleLink<DefaultAnimationLoop, sofa::core::behavior::BaseTimeIntegrator, BaseLink::LinkFlagsEnum::FLAG_STOREPATH > l_baseTimeIntegrator;
 public:
+    Data<bool> d_parallelODESolving; ///< If true, solves all the ODEs in parallel
 
     void init() override;
+
     /// Set the simulation node this animation loop is controlling
     virtual void setNode(simulation::Node*);
 
@@ -67,13 +66,26 @@ public:
 
 protected :
     simulation::Node* m_node { nullptr };
-    void propagateAnimateBeginEvent(const sofa::core::ExecParams* params, SReal dt) const;
-    void propagateAnimateEndEvent(const sofa::core::ExecParams* params, SReal dt) const;
+
+    void behaviorUpdatePosition(const sofa::core::ExecParams* params, SReal dt) const;
+    void updateInternalData(const sofa::core::ExecParams* params) const;
+    void beginIntegration(const sofa::core::ExecParams* params, SReal dt) const;
+    void propagateIntegrateBeginEvent(const sofa::core::ExecParams* params) const;
+    void accumulateMatrixDeriv(sofa::core::ConstraintParams cparams) const;
+    void solve(const sofa::core::ExecParams* params, SReal dt) const;
+    void propagateIntegrateEndEvent(const sofa::core::ExecParams* params) const;
+    void endIntegration(const sofa::core::ExecParams* params, SReal dt) const;
+    void projectPositionAndVelocity(SReal nextTime, const sofa::core::MechanicalParams& mparams) const;
+    void propagateOnlyPositionAndVelocity(SReal nextTime, const sofa::core::MechanicalParams& mparams) const;
+    void propagateCollisionBeginEvent(const sofa::core::ExecParams* params) const;
+    void propagateCollisionEndEvent(const sofa::core::ExecParams* params) const;
+    void collisionDetection(const sofa::core::ExecParams* params) const;
+    void animate(const sofa::core::ExecParams* params, SReal dt) const;
     void updateSimulationContext(const sofa::core::ExecParams* params, SReal dt, SReal startTime) const;
+    void propagateAnimateEndEvent(const sofa::core::ExecParams* params, SReal dt) const;
     void updateMapping(const sofa::core::ExecParams* params, SReal dt) const;
     void computeBoundingBox(const sofa::core::ExecParams* params) const;
-
-
+    void propagateAnimateBeginEvent(const sofa::core::ExecParams* params, SReal dt) const;
 
 };
 

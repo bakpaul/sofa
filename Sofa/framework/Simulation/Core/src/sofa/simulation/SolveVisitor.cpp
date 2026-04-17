@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/simulation/IntegrationSchemeBaseVisitor.h>
+#include <sofa/simulation/SolveVisitor.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/simulation/Node.h>
 #include <sofa/core/behavior/OdeSolver.h>
@@ -28,14 +28,29 @@
 #include <sofa/simulation/task/MainTaskSchedulerFactory.h>
 #include <sofa/core/MechanicalParams.h>
 #include <sofa/core/behavior/BaseInteractionForceField.h>
-#include <sofa/core/behavior/IntegrationScheme.h>
 
 namespace sofa::simulation
 {
 
-Visitor::Result IntegrationSchemeBaseVisitor::processNodeTopDown(simulation::Node* node)
+void SolveVisitor::processSolver(simulation::Node* node, sofa::core::behavior::OdeSolver* s)
 {
-    if (! node->integrationScheme.empty())
+    helper::ScopedAdvancedTimer timer("Mechanical",node);
+    s->solve(params, dt, x, v);
+}
+
+void SolveVisitor::fwdInteractionForceField(Node* node, core::behavior::BaseInteractionForceField* forceField)
+{
+    SOFA_UNUSED(node);
+
+    const core::MultiVecDerivId ffId = core::vec_id::write_access::externalForce;
+    core::MechanicalParams mparams;
+    mparams.setDt(dt);
+    forceField->addForce(&mparams, ffId);
+}
+
+Visitor::Result SolveVisitor::processNodeTopDown(simulation::Node* node)
+{
+    if (! node->solver.empty())
     {
         if (m_parallelSolve)
         {
@@ -47,10 +62,15 @@ Visitor::Result IntegrationSchemeBaseVisitor::processNodeTopDown(simulation::Nod
         }
         return RESULT_PRUNE;
     }
+
+    if (m_computeForceIsolatedInteractionForceFields)
+    {
+        for_each(this, node, node->interactionForceField, &SolveVisitor::fwdInteractionForceField);
+    }
     return RESULT_CONTINUE;
 }
 
-void IntegrationSchemeBaseVisitor::processNodeBottomUp(simulation::Node*)
+void SolveVisitor::processNodeBottomUp(simulation::Node*)
 {
     // only in case of parallel solving:
     // processNodeBottomUp is called after all processNodeTopDown calls are done,
@@ -67,11 +87,25 @@ void IntegrationSchemeBaseVisitor::processNodeBottomUp(simulation::Node*)
     m_tasks.clear();
 }
 
+void SolveVisitor::setDt(SReal _dt)
+{
+    dt = _dt;
+}
 
-IntegrationSchemeBaseVisitor::IntegrationSchemeBaseVisitor(const sofa::core::ExecParams* params, bool _parallelSolve)
+SReal SolveVisitor::getDt() const
+{
+    return dt;
+}
+
+SolveVisitor::SolveVisitor(const sofa::core::ExecParams* params, SReal _dt, sofa::core::MultiVecCoordId X,
+                           sofa::core::MultiVecDerivId V, bool _parallelSolve, bool computeForceIsolatedInteractionForceFields)
 
         : Visitor(params)
+        , dt(_dt)
+        , x(X)
+        , v(V)
         , m_parallelSolve(_parallelSolve)
+        , m_computeForceIsolatedInteractionForceFields(computeForceIsolatedInteractionForceFields)
 {
     if (m_parallelSolve)
     {
@@ -79,27 +113,44 @@ IntegrationSchemeBaseVisitor::IntegrationSchemeBaseVisitor(const sofa::core::Exe
     }
 }
 
-
-void IntegrationSchemeBaseVisitor::sequentialSolve(simulation::Node* node)
+SolveVisitor::SolveVisitor(const sofa::core::ExecParams* params, SReal _dt, bool free, bool _parallelSolve, bool computeForceIsolatedInteractionForceFields)
+: Visitor(params), dt(_dt), m_parallelSolve(_parallelSolve), m_computeForceIsolatedInteractionForceFields(computeForceIsolatedInteractionForceFields)
 {
-    for_each(this, node, node->integrationScheme, &IntegrationSchemeBaseVisitor::processSolver);
+    if(free)
+    {
+        x = sofa::core::vec_id::write_access::freePosition;
+        v = sofa::core::vec_id::write_access::freeVelocity;
+    }
+    else
+    {
+        x = sofa::core::vec_id::write_access::position;
+        v = sofa::core::vec_id::write_access::velocity;
+    }
+
+    if (m_parallelSolve)
+    {
+        initializeTaskScheduler();
+    }
 }
 
-void IntegrationSchemeBaseVisitor::parallelSolve(simulation::Node* node)
+void SolveVisitor::sequentialSolve(simulation::Node* node)
+{
+    for_each(this, node, node->solver, &SolveVisitor::processSolver);
+}
+
+void SolveVisitor::parallelSolve(simulation::Node* node)
 {
     auto* taskScheduler = sofa::simulation::MainTaskSchedulerFactory::createInRegistry();
     assert(taskScheduler != nullptr);
 
-    const auto task = std::bind(&IntegrationSchemeBaseVisitor::processSolver, this, node, std::placeholders::_1);
-
-    for (auto* solver : node->integrationScheme)
+    for (auto* solver : node->solver)
     {
-        m_tasks.emplace_back(&m_status, solver, task);
+        m_tasks.emplace_back(&m_status, solver, params, dt, x, v);
         taskScheduler->addTask(&m_tasks.back());
     }
 }
 
-void IntegrationSchemeBaseVisitor::initializeTaskScheduler()
+void SolveVisitor::initializeTaskScheduler()
 {
     auto* taskScheduler = sofa::simulation::MainTaskSchedulerFactory::createInRegistry();
     assert(taskScheduler != nullptr);
@@ -109,9 +160,9 @@ void IntegrationSchemeBaseVisitor::initializeTaskScheduler()
     }
 }
 
-sofa::simulation::Task::MemoryAlloc IntegrationSchemeBaseVisitorTask::run()
+sofa::simulation::Task::MemoryAlloc SolveVisitorTask::run()
 {
-    m_task(m_solver);
+    m_solver->solve(m_execParams, m_dt, m_x, m_v);
     return Task::Stack;
 }
 

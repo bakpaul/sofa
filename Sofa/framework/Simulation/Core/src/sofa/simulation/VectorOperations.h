@@ -47,10 +47,11 @@ public:
     static void realloc(sofa::simulation::common::VectorOperations& vop,
         core::TMultiVecId<vtype, core::VecAccess::V_WRITE>& id,
         const std::string& vecIdName,
-        const sofa::core::objectmodel::Base* holder)
+        const sofa::core::objectmodel::Base* holder,
+        bool interactionForcefield = false )
     {
         sofa::core::behavior::TMultiVec<vtype> vec(&vop, id);
-        vec.realloc(&vop, false, true, core::VecIdProperties{vecIdName, holder->getClassName()});
+        vec.realloc(&vop, interactionForcefield, true, core::VecIdProperties{vecIdName, holder->getClassName()});
         id = vec.id();
     }
 

@@ -59,7 +59,7 @@ void EulerImplicitIntegrationScheme::computePositionUpdateFromVelocity(sofa::cor
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
 
     sofa::core::behavior::MultiVecDeriv res(&vop, result );
-    res.eq(velocity, m_dt);
+    res.eq(velocity, -m_dt);
 }
 
 //Compute the acceleration from current value of velocity. This is the implementation of the inverse integration scheme for the velocity

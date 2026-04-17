@@ -36,6 +36,7 @@
 #include <sofa/simulation//UpdateVelAndPosVisitor.h>
 
 #include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/core/ObjectFactory.h>
 
 namespace sofa::simulation
 {
@@ -101,13 +102,14 @@ void LinearTimeIntegrator::solve(const sofa::core::ExecParams* params, SReal dt,
     constexpr bool usefreeVecIds = false;
     constexpr bool computeForceIsolatedInteractionForceFields = true;
     SCOPED_TIMER("solve");
+
     simulation::SetupIntegrationStepVisitor setupIntegration(params, dt, usefreeVecIds);
     setupIntegration.execute(l_node);
 
     simulation::ComputeLHSVisitor ComputeLHSVisitor(params, parallelODESolving, 0);
     ComputeLHSVisitor.execute(l_node);
 
-    simulation::ComputeRHSVisitor ComputeRHSVisitor(params, parallelODESolving, 0);
+    simulation::ComputeRHSVisitor ComputeRHSVisitor(params, parallelODESolving, dt, 0);
     ComputeRHSVisitor.execute(l_node);
 
     simulation::SolveLinearSystemVisitor SolveLinearSystemVisitor(params, parallelODESolving);
@@ -117,6 +119,12 @@ void LinearTimeIntegrator::solve(const sofa::core::ExecParams* params, SReal dt,
     UpdateVelAndPosVisitor.execute(l_node);
 }
 
+
+void registerLinearTimeIntegrator(sofa::core::ObjectFactory* factory)
+{
+    factory->registerObjects(core::ObjectRegistrationData("Time integrator, created by default when the user does not define one in the scene. This loop first computes the collision detection and then solves the physics by linearizing it once.")
+        .add<LinearTimeIntegrator>());
+}
 
 
 }

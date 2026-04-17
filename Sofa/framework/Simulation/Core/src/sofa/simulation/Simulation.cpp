@@ -19,51 +19,47 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/simulation/Simulation.h>
-#include <sofa/simulation/PrintVisitor.h>
-#include <sofa/simulation/ExportGnuplotVisitor.h>
-#include <sofa/simulation/InitVisitor.h>
-#include <sofa/simulation/MechanicalVisitor.h>
-#include <sofa/simulation/UpdateContextVisitor.h>
-#include <sofa/simulation/UpdateMappingVisitor.h>
-#include <sofa/simulation/ResetVisitor.h>
-#include <sofa/simulation/VisualVisitor.h>
-#include <sofa/simulation/ExportVisualModelOBJVisitor.h>
-#include <sofa/simulation/WriteStateVisitor.h>
-#include <sofa/simulation/XMLPrintVisitor.h>
-#include <sofa/simulation/PropagateEventVisitor.h>
+#include <sofa/core/ComponentNameHelper.h>
+#include <sofa/core/ObjectFactory.h>
+#include <sofa/core/visual/VisualParams.h>
+#include <sofa/helper/AdvancedTimer.h>
+#include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/helper/init.h>
+#include <sofa/helper/logging/Messaging.h>
+#include <sofa/helper/system/FileSystem.h>
+#include <sofa/helper/system/SetDirectory.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
 #include <sofa/simulation/CleanupVisitor.h>
-#include <sofa/simulation/DeleteVisitor.h>
-#include <sofa/simulation/UpdateBoundingBoxVisitor.h>
-#include <sofa/simulation/UpdateLinksVisitor.h>
-#include <sofa/simulation/init.h>
 #include <sofa/simulation/DefaultAnimationLoop.h>
 #include <sofa/simulation/DefaultVisualManagerLoop.h>
+#include <sofa/simulation/DeleteVisitor.h>
+#include <sofa/simulation/ExportGnuplotVisitor.h>
+#include <sofa/simulation/ExportVisualModelOBJVisitor.h>
+#include <sofa/simulation/InitVisitor.h>
+#include <sofa/simulation/MechanicalVisitor.h>
 #include <sofa/simulation/Node.h>
-#include <sofa/helper/system/SetDirectory.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/helper/init.h>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/ObjectFactory.h>
-#include <sofa/core/ComponentNameHelper.h>
-
+#include <sofa/simulation/PrintVisitor.h>
+#include <sofa/simulation/PropagateEventVisitor.h>
+#include <sofa/simulation/ResetVisitor.h>
 #include <sofa/simulation/SceneLoaderFactory.h>
-
-
-#include <sofa/simulation/events/SimulationInitStartEvent.h>
+#include <sofa/simulation/Simulation.h>
+#include <sofa/simulation/UpdateBoundingBoxVisitor.h>
+#include <sofa/simulation/UpdateContextVisitor.h>
+#include <sofa/simulation/UpdateLinksVisitor.h>
+#include <sofa/simulation/UpdateMappingVisitor.h>
+#include <sofa/simulation/VisualVisitor.h>
+#include <sofa/simulation/WriteStateVisitor.h>
+#include <sofa/simulation/XMLPrintVisitor.h>
 #include <sofa/simulation/events/SimulationInitDoneEvent.h>
+#include <sofa/simulation/events/SimulationInitStartEvent.h>
 #include <sofa/simulation/events/SimulationInitTexturesDoneEvent.h>
-
-
-#include <fstream>
-#include <cstring>
-
-#include <sofa/helper/logging/Messaging.h>
-#include <sofa/helper/ScopedAdvancedTimer.h>
-#include <sofa/helper/system/FileSystem.h>
-
+#include <sofa/simulation/init.h>
 #include <sofa/simulation/mechanicalvisitor/MechanicalProjectPositionAndVelocityVisitor.h>
+
+#include <cstring>
+#include <fstream>
+
+#include "sofa/core/behavior/BaseTimeIntegrator.h"
 using sofa::simulation::mechanicalvisitor::MechanicalProjectPositionAndVelocityVisitor;
 
 #include <sofa/simulation/mechanicalvisitor/MechanicalPropagateOnlyPositionAndVelocityVisitor.h>
@@ -215,9 +211,13 @@ void animate(Node* root, SReal dt)
     }
     const sofa::core::ExecParams* params = sofa::core::execparams::defaultInstance();
 
-    if (sofa::core::behavior::BaseAnimationLoop* aloop = root->getAnimationLoop())
+    // if (sofa::core::behavior::BaseAnimationLoop* aloop = root->getAnimationLoop())
+    // {
+    //     aloop->step(params, dt);
+    // }
+    if (auto* aloop = root->timeIntegrator.get())
     {
-        aloop->step(params, dt);
+        aloop->integrate(params, dt);
     }
     else
     {

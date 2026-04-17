@@ -44,17 +44,18 @@ VelocityBasedIntegrationScheme::VelocityBasedIntegrationScheme()
 
 void VelocityBasedIntegrationScheme::doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult)
 {
-
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
     simulation::common::VectorOperations::realloc(vop, m_r0, "r0", this);
-    simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this);
+    simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this, true);
     simulation::common::VectorOperations::realloc(vop, m_x0, "x0", this);
     simulation::common::VectorOperations::realloc(vop, m_v0, "v0", this);
-    simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this);
+    simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this, true);
     simulation::common::VectorOperations::realloc(vop, m_unknown, "dv", this);
 
-    sofa::core::behavior::MultiVecDeriv f(&vop, core::vec_id::write_access::force );
+    sofa::core::behavior::MultiVecDeriv dx(&vop, core::vec_id::write_access::dx);
+    //TODO: !d_threadSafeVisitor.getValue()
+    dx.realloc(&vop, false , true);
 
 }
 
@@ -67,6 +68,8 @@ void VelocityBasedIntegrationScheme::computeLHS(unsigned iteration)
 
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
+    mop.cparams.setX(m_xResult);
+    mop.cparams.setV(m_vResult);
 
     {
         SCOPED_TIMER("setSystemMBKMatrix");
@@ -90,10 +93,11 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
 {
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
-    sofa::core::behavior::MultiVecCoord pos(&vop, core::vec_id::write_access::position );
-    sofa::core::behavior::MultiVecDeriv vel(&vop, core::vec_id::write_access::velocity );
-    sofa::core::behavior::MultiVecDeriv f(&vop, core::vec_id::write_access::force );
+    mop.cparams.setX(m_xResult);
+    mop.cparams.setV(m_vResult);
 
+    sofa::core::behavior::MultiVecDeriv f(&vop, core::vec_id::write_access::force );
+    f.clear();
 
     sofa::core::behavior::MultiVecDeriv acc(&vop, m_a0 );
     acc.clear();
@@ -107,6 +111,8 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
 
     {
         SCOPED_TIMER("ComputeForce");
+
+        //TODO deal with that.
         mop->setImplicit(true); // this solver is implicit
         // compute the net forces at the beginning of the time step
 
@@ -138,14 +144,13 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
 
         if (iteration == 0) [[unlikely]]
         {
-            //TODO make sure this is what we want.
             computePositionUpdateFromVelocity(m_r1, core::vec_id::write_access::velocity);
             auto backV = mop->v();
             mop->setV(m_r1);
             // add the change of force due to stiffness + Rayleigh damping
             mop.addMBKv(b, core::MatricesFactors::M(0.0),
-                        core::MatricesFactors::B(0),
-                        core::MatricesFactors::K(1.0));
+                         core::MatricesFactors::B(0),
+                         core::MatricesFactors::K(-1.0));
             mop->setV(backV);
         }
 
@@ -155,16 +160,13 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
             auto backV = mop->v();
             mop->setV(m_a0);
             // add the change of force due to stiffness + Rayleigh damping
-            mop.addMBKv(b, core::MatricesFactors::M(1.0),
+            mop.addMBKv(b, core::MatricesFactors::M(-1.0),
                         core::MatricesFactors::B(0),
                         core::MatricesFactors::K(0));
             mop->setV(backV);
         }
-
         msg_info() << "b = " << b;
-
         mop.projectResponse(b);                                   // b is projected to the constrained space
-
         msg_info() << "projected b = " << b;
     }
 

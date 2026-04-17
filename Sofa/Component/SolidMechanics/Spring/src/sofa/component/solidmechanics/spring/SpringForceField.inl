@@ -610,6 +610,7 @@ typename DataTypes::DPos SpringForceField<DataTypes>::computeSpringDForce(VecDer
 template<class DataTypes>
 void SpringForceField<DataTypes>::addDForce(const core::MechanicalParams* mparams, DataVecDeriv& data_df1, DataVecDeriv& data_df2, const DataVecDeriv& data_dx1, const DataVecDeriv& data_dx2)
 {
+
     sofa::helper::WriteOnlyAccessor<sofa::Data<VecDeriv>> df1 = sofa::helper::getWriteOnlyAccessor(data_df1);
     sofa::helper::WriteOnlyAccessor<sofa::Data<VecDeriv>> df2 = sofa::helper::getWriteOnlyAccessor(data_df2);
     const VecDeriv&  dx1 =  data_dx1.getValue();

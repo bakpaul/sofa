@@ -41,10 +41,10 @@ namespace sofa::core::behavior
  *  (some computations can be executed in parallel).
  *
  */
-class SOFA_CORE_API IntegrationScheme : public virtual objectmodel::BaseObject
+class SOFA_CORE_API IntegrationScheme : public virtual objectmodel::BaseComponent
 {
 public:
-    SOFA_ABSTRACT_CLASS(IntegrationScheme, objectmodel::BaseObject);
+    SOFA_ABSTRACT_CLASS(IntegrationScheme, objectmodel::BaseComponent);
     SOFA_BASE_CAST_IMPLEMENTATION(IntegrationScheme)
 
 protected:

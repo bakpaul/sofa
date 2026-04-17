@@ -1448,6 +1448,9 @@ template <class DataTypes>
 const Data<typename MechanicalObject<DataTypes>::VecDeriv>* MechanicalObject<DataTypes>::read(core::ConstVecDerivId v) const
 {
 
+    std::cout<<"Accessing "<<v.getName()<<" from "<<this->getName()<<std::endl;
+    std::cout<<"Index is "<<v.index<<" in a state of size "<<vectorsDeriv.size()<<std::endl;
+
     if (v.index < vectorsDeriv.size())
     {
         const Data<typename MechanicalObject<DataTypes>::VecDeriv>* d = vectorsDeriv[v.index];

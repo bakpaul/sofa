@@ -45,6 +45,7 @@ set(HEADER_FILES
     ${SRC_ROOT}/SceneLoaderFactory.h
     ${SRC_ROOT}/Simulation.h
     ${SRC_ROOT}/SimulationLoop.h
+    ${SRC_ROOT}/SolveVisitor.h
     ${SRC_ROOT}/StateChangeVisitor.h
     ${SRC_ROOT}/TopologyChangeVisitor.h
     ${SRC_ROOT}/UpdateBoundingBoxVisitor.h
@@ -200,6 +201,7 @@ set(SOURCE_FILES
     ${SRC_ROOT}/SceneCheckRegistry.cpp
     ${SRC_ROOT}/SceneCheckMainRegistry.cpp
     ${SRC_ROOT}/Simulation.cpp
+    ${SRC_ROOT}/SolveVisitor.cpp
     ${SRC_ROOT}/StateChangeVisitor.cpp
     ${SRC_ROOT}/TopologyChangeVisitor.cpp
     ${SRC_ROOT}/UpdateBoundingBoxVisitor.cpp

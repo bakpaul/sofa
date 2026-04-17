@@ -41,6 +41,7 @@ public:
 
     ComputeRHSVisitor(const sofa::core::ExecParams* params,
                      bool parallelSolve,
+                     SReal dt,
                      unsigned iteration);
 
     void processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* b) override;
@@ -50,6 +51,7 @@ public:
 
 
 protected:
+    SReal m_dt;
     unsigned m_iteration;
 };
 

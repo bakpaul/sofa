@@ -38,7 +38,7 @@ namespace sofa::simulation::integrationschemes
 {
 
 class SOFA_SIMULATION_CORE_API VelocityBasedIntegrationScheme :
-                            public sofa::core::behavior::IntegrationScheme,
+                            public  sofa::core::behavior::IntegrationScheme,
                             public sofa::core::behavior::LinearSolverAccessor
 {
 public:

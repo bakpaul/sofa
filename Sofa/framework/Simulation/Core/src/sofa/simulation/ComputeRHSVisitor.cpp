@@ -37,8 +37,10 @@ namespace sofa::simulation
 
 ComputeRHSVisitor::ComputeRHSVisitor(const sofa::core::ExecParams* params,
                      bool parallelSolve,
+                     SReal dt,
                      unsigned iteration)
 : IntegrationSchemeBaseVisitor(params, parallelSolve)
+, m_dt(dt)
 , m_iteration(iteration)
 {
 
@@ -58,13 +60,13 @@ void ComputeRHSVisitor::fwdInteractionForceField(Node* node, core::behavior::Bas
 
     const core::MultiVecDerivId ffId = core::vec_id::write_access::externalForce;
     core::MechanicalParams mparams;
-    mparams.setDt(dt);
+    mparams.setDt(m_dt);
     forceField->addForce(&mparams, ffId);
 }
 
 Visitor::Result ComputeRHSVisitor::processNodeTopDown(simulation::Node* node)
 {
-    if (! node->solver.empty())
+    if (! node->integrationScheme.empty())
     {
         if (m_parallelSolve)
         {
