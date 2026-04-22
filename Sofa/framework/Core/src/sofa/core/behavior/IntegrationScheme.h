@@ -53,6 +53,9 @@ protected:
 
 public:
 
+    // WARNING we expect the linear integrator to initialize the working vecs. Meaning that if we
+    // work in FreeMotion, the xResult should already be equal to the actual position.
+    // Same for the velocity. This is expected when updating the position, only a += will be done.
     virtual void setupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult);
     virtual void doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult)
     {  }
@@ -99,6 +102,8 @@ protected:
 
     sofa::core::MultiVecCoordId m_x0;
     sofa::core::MultiVecDerivId m_a0, m_v0, m_r0, m_r1, m_r2;
+
+    sofa::core::MultiVecDerivId m_acceleration;
 
     sofa::core::MultiVecDerivId m_unknown;
 

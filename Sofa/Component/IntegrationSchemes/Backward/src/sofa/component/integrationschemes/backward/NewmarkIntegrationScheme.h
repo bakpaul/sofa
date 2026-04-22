@@ -19,54 +19,44 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/component/integrationschemes/backward/init.h>
-#include <sofa/core/ObjectFactory.h>
-#include <sofa/helper/system/PluginManager.h>
+#pragma once
+#include <sofa/component/integrationschemes/backward/config.h>
+#include <sofa/core/behavior/IntegrationScheme.h>
+#include <sofa/core/behavior/LinearSolverAccessor.h>
+#include <sofa/simulation/MechanicalOperations.h>
+#include <sofa/simulation/VectorOperations.h>
+#include <sofa/simulation/integrationschemes/VelocityBasedIntegrationScheme.h>
 
+#include "sofa/simulation/integrationschemes/AccelerationBasedIntegrationScheme.h"
+
+namespace sofa::simulation::common
+{
+class VectorOperations;
+}
 namespace sofa::component::integrationschemes::backward
 {
 
-extern void registerEulerImplicitIntegrationScheme(sofa::core::ObjectFactory* factory);
-extern void registerNewmarkIntegrationScheme(sofa::core::ObjectFactory* factory);
 
-extern "C" {
-    SOFA_EXPORT_DYNAMIC_LIBRARY void initExternalModule();
-    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleName();
-    SOFA_EXPORT_DYNAMIC_LIBRARY const char* getModuleVersion();
-    SOFA_EXPORT_DYNAMIC_LIBRARY void registerObjects(sofa::core::ObjectFactory* factory);
-}
-
-void initExternalModule()
+class SOFA_COMPONENT_INTEGRATIONSCHEMES_BACKWARD_API NewmarkIntegrationScheme :
+    public sofa::simulation::integrationschemes::AccelerationBasedIntegrationScheme
 {
-    init();
-}
+public:
+    SOFA_CLASS(NewmarkIntegrationScheme, sofa::simulation::integrationschemes::AccelerationBasedIntegrationScheme);
 
-const char* getModuleName()
-{
-    return MODULE_NAME;
-}
+    core::objectmodel::Data<SReal> d_beta;
+    core::objectmodel::Data<SReal> d_gamma;
 
-const char* getModuleVersion()
-{
-    return MODULE_VERSION;
-}
+protected:
+    NewmarkIntegrationScheme();
 
-void registerObjects(sofa::core::ObjectFactory* factory)
-{
-    registerEulerImplicitIntegrationScheme(factory);
-    registerNewmarkIntegrationScheme(factory);
-}
+    SReal getPositionUpdateDerivedFromAcceleration() const override;
+    SReal getPositionUpdateDerivedFromVelocity() const override;
+    SReal getVelocityUpdateDerivedFromAcceleration() const override;
 
-void init()
-{
-    static bool first = true;
-    if (first)
-    {
-        // make sure that this plugin is registered into the PluginManager
-        sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
+    // void computeCurrentAccelerationFromVelocity(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity) override ;
+    void computePositionUpdateFromVelocityAndAcceleration(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity, const sofa::core::MultiVecDerivId& acceleration) override;
+    void computeVelocityUpdateFromAcceleration(sofa::simulation::common::VectorOperations & vop, const sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& acceleration) override;
 
-        first = false;
-    }
-}
+};
 
 } // namespace sofa::component::integrationschemes::backward

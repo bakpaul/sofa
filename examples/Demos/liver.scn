@@ -26,9 +26,11 @@
     <MeshOBJLoader name="LiverSurface" filename="mesh/liver-smooth.obj" />
 
     <Node name="Liver" gravity="0 -9.81 0">
-        <EulerImplicitIntegrationScheme name="cg_odesolver"   rayleighStiffness="0.1" rayleighMass="0.1" />
+        <NewmarkIntegrationScheme name="cg_odesolver"  beta="0.25" gamma="0.5" rayleighStiffness="0.1" rayleighMass="0.1"  />
 
         <CGLinearSolver name="linear solver" iterations="25" tolerance="1e-09" threshold="1e-09" />
+<!--        <SparseLDLSolver name="linear solver" iterations="25" tolerance="1e-09" threshold="1e-09" />-->
+
         <MeshGmshLoader name="meshLoader" filename="mesh/liver.msh" />
         <TetrahedronSetTopologyContainer name="topo" src="@meshLoader" />
         <MechanicalObject name="dofs" src="@meshLoader" />

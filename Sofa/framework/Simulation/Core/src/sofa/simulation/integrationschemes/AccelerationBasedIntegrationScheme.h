@@ -44,47 +44,45 @@ public:
     SOFA_ABSTRACT_CLASS(AccelerationBasedIntegrationScheme, sofa::core::behavior::IntegrationScheme);
 
 protected:
-    AccelerationBasedIntegrationScheme();
-    ~AccelerationBasedIntegrationScheme() = default;
+    AccelerationBasedIntegrationScheme() = default;
 
-    virtual void doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult);
+    void doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult) override;
 
     /**
      * Compute the system matrix.
      */
-    virtual void computeLHS(unsigned iteration = 0);
+    void computeLHS(unsigned iteration = 0) override;
 
     /**
     * compute the current RHS.
     */
-    virtual void computeRHS(unsigned iteration = 0);
+    void computeRHS(unsigned iteration = 0) override;
 
 
     /**
      * Returns the squared norm of the last evaluation of the RHS
      */
-    virtual SReal squaredNormRHS();
+    SReal squaredNormRHS() override;
 
 
     /**
      * Solve the linear equation from a Newton iteration, i.e. it computes (x^{i+1}-x^i).
      */
-    virtual void solveLinearEquation();
+    void solveLinearEquation() override;
 
     /**
      * Once (x^{i+1}-x^i) has been computed, the result is used internally to update the current
      * guess. It computes x^{i+1} += alpha * dx, where dx is the result of the linear system. It is
      * not necessary to share the result with the Newton-Raphson method.
      */
-    virtual void updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration = 0);
+    void updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration = 0) override;
 
     virtual SReal getPositionUpdateDerivedFromAcceleration() const = 0;
     virtual SReal getPositionUpdateDerivedFromVelocity() const = 0;
     virtual SReal getVelocityUpdateDerivedFromAcceleration() const = 0;
 
-    virtual void computeCurrentAccelerationFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity);
-    virtual void computePositionUpdateFromVelocityAndAcceleration(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity, const sofa::core::MultiVecDerivId& acceleration) = 0;
-    virtual void computeVelocityUpdateFromAcceleration(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity) = 0;
+    virtual void computePositionUpdateFromVelocityAndAcceleration(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity, const sofa::core::MultiVecDerivId& acceleration) = 0;
+    virtual void computeVelocityUpdateFromAcceleration(sofa::simulation::common::VectorOperations & vop, const sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& acceleration) = 0;
 
 
 };

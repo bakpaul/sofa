@@ -32,30 +32,31 @@
 #include <sofa/simulation/mechanicalvisitor/MechanicalGetNonDiagonalMassesCountVisitor.h>
 using sofa::simulation::mechanicalvisitor::MechanicalGetNonDiagonalMassesCountVisitor;
 
-//#define SOFA_NO_VMULTIOP
 
 namespace sofa::simulation::integrationschemes
 {
-AccelerationBasedIntegrationScheme::AccelerationBasedIntegrationScheme()
-{
-    
-}
-
-
 void AccelerationBasedIntegrationScheme::doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult)
 {
 
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
-    simulation::common::VectorOperations::realloc(vop, m_r0, "r0", this);
-    simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this);
-    simulation::common::VectorOperations::realloc(vop, m_r2, "r2", this);
+    simulation::common::VectorOperations::realloc(vop, m_r0, "r0", this, true);
+    simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this, true);
+    simulation::common::VectorOperations::realloc(vop, m_r2, "r2", this, true);
     simulation::common::VectorOperations::realloc(vop, m_x0, "x0", this);
     simulation::common::VectorOperations::realloc(vop, m_v0, "v0", this);
-    simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this);
-    simulation::common::VectorOperations::realloc(vop, m_unknown, "da", this);
+    simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this, true);
+    simulation::common::VectorOperations::realloc(vop, m_acceleration, "acceleration", this, true);
+    simulation::common::VectorOperations::realloc(vop, m_unknown, "da", this, true);
 
-    computeCurrentAccelerationFromVelocity(m_a0, core::vec_id::write_access::velocity);
+    //Might be used afterwards by computeAccelerationFromVelocity
+    sofa::core::behavior::MultiVecDeriv v0(&vop, m_v0);
+    v0.eq(core::vec_id::write_access::velocity);
+    sofa::core::behavior::MultiVecCoord x0(&vop, m_x0);
+    x0.eq(core::vec_id::write_access::position);
+    sofa::core::behavior::MultiVecDeriv a0(&vop, m_a0);
+    a0.eq(m_acceleration);
+
 }
 
 /**
@@ -73,15 +74,11 @@ void AccelerationBasedIntegrationScheme::computeLHS(unsigned iteration)
         SReal DGv = getVelocityUpdateDerivedFromAcceleration();
 
         SCOPED_TIMER("setSystemMBKMatrix");
-        const core::MatricesFactors::M mFact( 1 - DGv * d_rayleighMass.getValue() );
+        const core::MatricesFactors::M mFact( 1 + DGv * d_rayleighMass.getValue() );
         const core::MatricesFactors::B bFact( -DGv );
-        const core::MatricesFactors::K kFact( - DGx - DGv * d_rayleighMass.getValue() );
+        const core::MatricesFactors::K kFact( - DGx - DGv * d_rayleighStiffness.getValue() );
 
         mop.setSystemMBKMatrix(mFact, bFact, kFact, l_linearSolver.get());
-
-#ifdef SOFA_DUMP_VISITOR_INFO
-        simulation::Visitor::printNode("SystemSolution");
-#endif
     }
 
 }
@@ -95,37 +92,35 @@ void AccelerationBasedIntegrationScheme::computeRHS(unsigned iteration)
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
     sofa::core::behavior::MultiVecCoord pos(&vop, core::vec_id::write_access::position );
     sofa::core::behavior::MultiVecDeriv vel(&vop, core::vec_id::write_access::velocity );
+
     sofa::core::behavior::MultiVecDeriv f(&vop, core::vec_id::write_access::force );
-
-
+    f.clear();
     sofa::core::behavior::MultiVecDeriv b(&vop, m_r0 );
     b.clear();
+    sofa::core::behavior::MultiVecDeriv r1(&vop, m_r1 );
+    r1.clear();
+    sofa::core::behavior::MultiVecDeriv r2(&vop, m_r2 );
+    r2.clear();
 
 
 
     {
+        //TODO deal with that.
         SCOPED_TIMER("ComputeForce");
         mop->setImplicit(true); // this solver is implicit
         // compute the net forces at the beginning of the time step
         mop.computeForce(f);                                                               //f = Kx + Bv
-
-        msg_info() << "initial f = " << f;
     }
 
     {
         SCOPED_TIMER("ComputeRHTerm");
-        // new more powerful visitors
 
-        // force in the current configuration
         b.eq(f, 1.0);  // b = f
-
-        msg_info() << "f = " << f;
 
         if (   fabs(d_rayleighMass.getValue()) > std::numeric_limits<SReal>::epsilon()
             || fabs(d_rayleighMass.getValue()) > std::numeric_limits<SReal>::epsilon())
         {
-            //TODO verify if we need to modulate by the timestep
-            mop.addMBKv(b, core::MatricesFactors::M(d_rayleighMass.getValue()),
+            mop.addMBKv(b, core::MatricesFactors::M(-d_rayleighMass.getValue()),
             core::MatricesFactors::B(0),
             core::MatricesFactors::K(d_rayleighStiffness.getValue()));
         }
@@ -133,54 +128,36 @@ void AccelerationBasedIntegrationScheme::computeRHS(unsigned iteration)
 
         if (iteration == 0) [[unlikely]]
         {
-            sofa::core::behavior::MultiVecDeriv r1(&vop, m_r1 );
-            r1.clear();
-            sofa::core::behavior::MultiVecDeriv r2(&vop, m_r2 );
-            r2.clear();
-
-            computePositionUpdateFromVelocityAndAcceleration(m_r1, core::vec_id::write_access::velocity, m_a0);
-            r1.teq(-1);
-            r1.peq(core::vec_id::write_access::position);
-
             auto backV = mop->v();
+
+            computePositionUpdateFromVelocityAndAcceleration(vop, m_r1, core::vec_id::write_access::velocity, m_acceleration);
+            r1.teq(-1.0);
+
             mop->setV(m_r1);
-            // add the change of force due to stiffness + Rayleigh damping
             mop.addMBKv(b, core::MatricesFactors::M(0.0),
                         core::MatricesFactors::B(0),
-                        core::MatricesFactors::K(1.0));
-            b.peq(m_r1, -1.0);
+                        core::MatricesFactors::K(-1.0));
 
 
-            //TODO
-            //computeVelocityUpdateFromAcceleration(core::vec_id::read_access::velocity, m_a0);
-            r2.teq(-1);
-            r2.peq(core::vec_id::write_access::velocity);
+            computeVelocityUpdateFromAcceleration(vop, m_r2, m_acceleration);
+            r2.teq(-1.0);
 
             mop->setV(m_r2);
-            // add the change of force due to stiffness + Rayleigh damping
-            mop.addMBKv(b, core::MatricesFactors::M(0.0),
-                        core::MatricesFactors::B(1.0),
-                        core::MatricesFactors::K(getPositionUpdateDerivedFromVelocity()));
-            b.peq(m_r1, -1.0);
+            mop.addMBKv(b, core::MatricesFactors::M(d_rayleighMass.getValue()),
+                        core::MatricesFactors::B(-1.0),
+                        core::MatricesFactors::K(-getPositionUpdateDerivedFromVelocity() - d_rayleighStiffness.getValue()));
             mop->setV(backV);
         }
 
-        if (iteration) [[likely]]
-        {
-            auto backV = mop->v();
-            mop->setV(m_a0);
-            // add the change of force due to stiffness + Rayleigh damping
-            mop.addMBKv(b, core::MatricesFactors::M(1.0),
-                        core::MatricesFactors::B(0),
-                        core::MatricesFactors::K(0));
-            mop->setV(backV);
-        }
 
-        msg_info() << "b = " << b;
+        auto backV = mop->v();
+        mop->setV(m_acceleration);
+        mop.addMBKv(b, core::MatricesFactors::M(-1.0),
+                    core::MatricesFactors::B(0),
+                    core::MatricesFactors::K(0));
+        mop->setV(backV);
 
-        mop.projectResponse(b);                                   // b is projected to the constrained space
-
-        msg_info() << "projected b = " << b;
+        mop.projectResponse(b);   // b is projected to the constrained space
     }
 
 }
@@ -220,31 +197,35 @@ void AccelerationBasedIntegrationScheme::solveLinearEquation()
  */
 void AccelerationBasedIntegrationScheme::updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration)
 {
+    //TODO use alpha
     sofa::simulation::common::VectorOperations vop( m_params, this->getContext() );
+    sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
 
-    sofa::core::behavior::MultiVecCoord pos(&vop, core::vec_id::write_access::position );
-    sofa::core::behavior::MultiVecDeriv vel(&vop, core::vec_id::write_access::velocity );
+    sofa::core::behavior::MultiVecCoord pos(&vop, m_xResult);
+    sofa::core::behavior::MultiVecDeriv vel(&vop, m_vResult );
+    sofa::core::behavior::MultiVecDeriv acc(&vop, m_acceleration );
 
     const SReal DGx = getPositionUpdateDerivedFromVelocity()*getVelocityUpdateDerivedFromAcceleration() + getPositionUpdateDerivedFromAcceleration();
     const SReal DGv = getVelocityUpdateDerivedFromAcceleration();
 
 
+    acc.peq(m_unknown);
     vel.peq(m_unknown, DGv);
     pos.peq(m_unknown, DGx);
+
+    //TODO make this work with alpha, iteration might be still 0 but we are in the linesearch algo and we don't want to remove this each time...
     if (iteration == 0) [[unlikely]]
     {
         vel.peq(m_r2, -1.0);
 
         pos.peq(m_r1, -1.0);
-        pos.peq(m_r2, -getPositionUpdateDerivedFromVelocity());
+
+        const SReal pudfv = getPositionUpdateDerivedFromVelocity();
+        if ( fabs(pudfv) > std::numeric_limits<SReal>::epsilon() )
+            pos.peq(m_r2, -pudfv);
     }
 }
 
-
-void AccelerationBasedIntegrationScheme::computeCurrentAccelerationFromVelocity(sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity)
-{
-
-};
 
 
 } // namespace sofa::component::integrationschemes::forward

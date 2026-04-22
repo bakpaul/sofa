@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/component/integrationschemes/backward/EulerImplicitIntegrationScheme.h>
+#include <sofa/component/integrationschemes/backward/NewmarkIntegrationScheme.h>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
@@ -35,44 +35,47 @@ using core::VecId;
 using namespace sofa::defaulttype;
 using namespace core::behavior;
 
-EulerImplicitIntegrationScheme::EulerImplicitIntegrationScheme()
-    : d_trapezoidalScheme( initData(&d_trapezoidalScheme,false,"trapezoidalScheme","Boolean to use the trapezoidal scheme instead of the implicit Euler scheme and get second order accuracy in time (false by default)") )
-    {
-}
+NewmarkIntegrationScheme::NewmarkIntegrationScheme()
+: d_beta(initData(&d_beta,0.25,"beta","Factor controlling the 'implicitness' of the position computation with respect to the acceleration. 0.0 means explicit central difference, 1.0/0.6 means linear accelerations scheme") )
+, d_gamma(initData(&d_gamma,0.5,"gamma","Factor controlling the 'implicitness' of the velocity computation with respect to the acceleration. To insure unconditional stability, gamma must belong to [2*beta, 1/2]. ") )
+{  }
 
-
-
-SReal EulerImplicitIntegrationScheme::getPositionUpdateDerivedFromVelocity() const
+SReal NewmarkIntegrationScheme::getPositionUpdateDerivedFromAcceleration() const
 {
-    return m_dt;
+    return m_dt * m_dt * d_beta.getValue();
 }
 
-SReal EulerImplicitIntegrationScheme::getInverseVelocityUpdateDerivedFromVelocity() const
+SReal NewmarkIntegrationScheme::getPositionUpdateDerivedFromVelocity() const
 {
-    return 1/m_dt;
+    return 0.0;
 }
 
-//Compute the position update from current value of velocity : dX = x_t - g_x(v_i)
-void EulerImplicitIntegrationScheme::computePositionUpdateFromVelocity(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity)
+SReal NewmarkIntegrationScheme::getVelocityUpdateDerivedFromAcceleration() const
 {
-    //TODO this is not in accordance to its use in VelocityIntegrationScheme where it is ecxpected to compute X and not dX being g_x(v) - x_t
-    sofa::core::behavior::MultiVecDeriv res(&vop, result );
-    res.eq(velocity, m_dt);
+    return m_dt * d_gamma.getValue();
 }
 
-//Compute the acceleration from current value of velocity. This is the implementation of the inverse integration scheme for the velocity
-void EulerImplicitIntegrationScheme::computeAccelerationFromVelocity(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity)
+
+void NewmarkIntegrationScheme::computePositionUpdateFromVelocityAndAcceleration(sofa::simulation::common::VectorOperations & vop, sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& velocity, const sofa::core::MultiVecDerivId& acceleration)
 {
     sofa::core::behavior::MultiVecDeriv res(&vop, result );
-    res.eq(velocity, 1/m_dt);
-    res.peq(m_v0, -1/m_dt);
+    res.eq(m_v0, m_dt);
+    res.peq(acceleration, m_dt * m_dt * d_beta.getValue() );
+    res.peq(m_a0, m_dt * m_dt * (0.5  -  d_beta.getValue()) );
+}
+
+void NewmarkIntegrationScheme::computeVelocityUpdateFromAcceleration(sofa::simulation::common::VectorOperations & vop, const sofa::core::MultiVecDerivId& result, const sofa::core::MultiVecDerivId& acceleration)
+{
+    sofa::core::behavior::MultiVecDeriv res(&vop, result );
+    res.peq(acceleration, m_dt * d_gamma.getValue() );
+    res.peq(m_a0, m_dt * (1.0  -  d_gamma.getValue()) );
 }
 
 
-void registerEulerImplicitIntegrationScheme(sofa::core::ObjectFactory* factory)
+void registerNewmarkIntegrationScheme(sofa::core::ObjectFactory* factory)
 {
     factory->registerObjects(core::ObjectRegistrationData("Time integrator using implicit backward Euler scheme.")
-        .add< EulerImplicitIntegrationScheme >());
+        .add< NewmarkIntegrationScheme >());
 }
 
 } // namespace sofa::component::odesolver::backward
