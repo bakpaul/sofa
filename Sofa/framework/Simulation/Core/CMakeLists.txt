@@ -28,6 +28,7 @@ set(HEADER_FILES
     ${SRC_ROOT}/IntegrateBeginEvent.h
     ${SRC_ROOT}/IntegrateEndEvent.h
     ${SRC_ROOT}/LinearTimeIntegrator.h
+    ${SRC_ROOT}/NonLinearTimeIntegrator.h
     ${SRC_ROOT}/MechanicalOperations.h
     ${SRC_ROOT}/MechanicalVPrintVisitor.h
     ${SRC_ROOT}/MechanicalVisitor.h
@@ -220,6 +221,7 @@ set(SOURCE_FILES
     ${SRC_ROOT}/fwd.cpp
     ${SRC_ROOT}/BaseSimulationExporter.cpp
     ${SRC_ROOT}/LinearTimeIntegrator.cpp
+    ${SRC_ROOT}/NonLinearTimeIntegrator.cpp
 
     ${SRC_ROOT}/ComputeLHSVisitor.cpp
     ${SRC_ROOT}/ComputeRHSVisitor.cpp
