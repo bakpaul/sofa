@@ -30,6 +30,7 @@
 #include <sofa/simulation/MechanicalOperations.h>
 #include <sofa/simulation/VectorOperations.h>
 #include <sofa/simulation/mechanicalvisitor/MechanicalGetNonDiagonalMassesCountVisitor.h>
+
 using sofa::simulation::mechanicalvisitor::MechanicalGetNonDiagonalMassesCountVisitor;
 
 
@@ -43,18 +44,33 @@ void AccelerationBasedIntegrationScheme::doSetupIntegrationStep(const core::Exec
     simulation::common::VectorOperations::realloc(vop, m_r0, "r0", this, true);
     simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this, true);
     simulation::common::VectorOperations::realloc(vop, m_r2, "r2", this, true);
-    simulation::common::VectorOperations::realloc(vop, m_x0, "x0", this);
-    simulation::common::VectorOperations::realloc(vop, m_v0, "v0", this);
-    simulation::common::VectorOperations::realloc(vop, m_a0, "a0", this, true);
+
+    const Size order = getIntegrationSchemeOrder();
+    for (unsigned i = 0; i < order; ++i)
+    {
+        simulation::common::VectorOperations::realloc(vop, m_x0[i], "x0" + (order != 1 ? "_" + std::to_string(i)  : ""), this);
+        simulation::common::VectorOperations::realloc(vop, m_v0[i], "v0" + (order != 1 ? "_" + std::to_string(i)  : ""), this);
+        simulation::common::VectorOperations::realloc(vop, m_a0[i], "a0" + (order != 1 ? "_" + std::to_string(i)  : ""), this, true);
+    }
+    for (unsigned i = 0; i < order - 1; ++i)
+    {
+        sofa::core::behavior::MultiVecCoord x(&vop, m_x0[i]);
+        x.eq(m_x0[i+1]);
+        sofa::core::behavior::MultiVecDeriv v(&vop, m_v0[i]);
+        v.eq(m_v0[i+1]);
+        sofa::core::behavior::MultiVecDeriv a(&vop, m_a0[i]);
+        a.eq(m_a0[i+1]);
+    }
+
     simulation::common::VectorOperations::realloc(vop, m_acceleration, "acceleration", this, true);
     simulation::common::VectorOperations::realloc(vop, m_unknown, "da", this, true);
 
     //Might be used afterwards by computeAccelerationFromVelocity
-    sofa::core::behavior::MultiVecDeriv v0(&vop, m_v0);
+    sofa::core::behavior::MultiVecDeriv v0(&vop, m_v0[order - 1]);
     v0.eq(core::vec_id::write_access::velocity);
-    sofa::core::behavior::MultiVecCoord x0(&vop, m_x0);
+    sofa::core::behavior::MultiVecCoord x0(&vop, m_x0[order - 1]);
     x0.eq(core::vec_id::write_access::position);
-    sofa::core::behavior::MultiVecDeriv a0(&vop, m_a0);
+    sofa::core::behavior::MultiVecDeriv a0(&vop, m_a0[order - 1]);
     a0.eq(m_acceleration);
 
 }

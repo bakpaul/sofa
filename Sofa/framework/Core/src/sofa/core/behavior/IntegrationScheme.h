@@ -95,13 +95,17 @@ public:
 
 protected:
 
+    virtual sofa::Size getIntegrationSchemeOrder() = 0;
+
     const core::ExecParams* m_params;
     SReal m_dt;
     sofa::core::MultiVecCoordId m_xResult;
     sofa::core::MultiVecDerivId m_vResult;
 
-    sofa::core::MultiVecCoordId m_x0;
-    sofa::core::MultiVecDerivId m_a0, m_v0, m_r0, m_r1, m_r2;
+    sofa::core::MultiVecDerivId m_r0, m_r1, m_r2;
+
+    std::vector<MultiVecCoordId> m_x0;
+    std::vector<MultiVecDerivId> m_a0, m_v0;
 
     sofa::core::MultiVecDerivId m_acceleration;
 

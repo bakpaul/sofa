@@ -43,7 +43,13 @@ void IntegrationScheme::setupIntegrationStep(const core::ExecParams* params, SRe
     m_xResult = xResult;
     m_vResult = vResult;
 
+    m_x0.resize(getIntegrationSchemeOrder());
+    m_v0.resize(getIntegrationSchemeOrder());
+    m_a0.resize(getIntegrationSchemeOrder());
+
     doSetupIntegrationStep(params, dt, xResult, vResult);
+
+
 }
 
 

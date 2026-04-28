@@ -42,15 +42,28 @@ void VelocityBasedIntegrationScheme::doSetupIntegrationStep(const core::ExecPara
     sofa::simulation::common::MechanicalOperations mop( m_params, this->getContext() );
     simulation::common::VectorOperations::realloc(vop, m_r0, "r0", this, true);
     simulation::common::VectorOperations::realloc(vop, m_r1, "r1", this, true);
-    simulation::common::VectorOperations::realloc(vop, m_x0, "x0", this);
-    simulation::common::VectorOperations::realloc(vop, m_v0, "v0", this);
+
+    const Size order = getIntegrationSchemeOrder();
+    for (unsigned i = 0; i < order; ++i)
+    {
+        simulation::common::VectorOperations::realloc(vop, m_x0[i], "x0" + (order != 1 ? "_" + std::to_string(i)  : ""), this);
+        simulation::common::VectorOperations::realloc(vop, m_v0[i], "v0" + (order != 1 ? "_" + std::to_string(i)  : ""), this);
+    }
+    for (unsigned i = 0; i < order - 1; ++i)
+    {
+        sofa::core::behavior::MultiVecCoord x(&vop, m_x0[i]);
+        x.eq(m_x0[i+1]);
+        sofa::core::behavior::MultiVecDeriv v(&vop, m_v0[i]);
+        v.eq(m_v0[i+1]);
+    }
+
     simulation::common::VectorOperations::realloc(vop, m_acceleration, "acceleration", this, true);
     simulation::common::VectorOperations::realloc(vop, m_unknown, "dv", this, true);
 
     //Might be used afterwards by computeAccelerationFromVelocity
-    sofa::core::behavior::MultiVecDeriv v0(&vop, m_v0);
+    sofa::core::behavior::MultiVecDeriv v0(&vop, m_v0[order - 1]);
     v0.eq(core::vec_id::write_access::velocity);
-    sofa::core::behavior::MultiVecCoord x0(&vop, m_x0);
+    sofa::core::behavior::MultiVecCoord x0(&vop, m_x0[order - 1]);
     x0.eq(core::vec_id::write_access::position);
 }
 
@@ -138,17 +151,15 @@ void VelocityBasedIntegrationScheme::computeRHS(unsigned iteration)
             mop->setV(backV);
         }
 
-        if (iteration) [[likely]]
-        {
-            computeAccelerationFromVelocity(vop, m_acceleration, core::vec_id::write_access::velocity);
-            auto backV = mop->v();
-            mop->setV(m_acceleration);
-            // add the change of force due to stiffness + Rayleigh damping
-            mop.addMBKv(b, core::MatricesFactors::M(-1.0),
-                        core::MatricesFactors::B(0),
-                        core::MatricesFactors::K(0));
-            mop->setV(backV);
-        }
+        computeAccelerationFromVelocity(vop, m_acceleration, core::vec_id::write_access::velocity);
+        auto backV = mop->v();
+        mop->setV(m_acceleration);
+        // add the change of force due to stiffness + Rayleigh damping
+        mop.addMBKv(b, core::MatricesFactors::M(-1.0),
+                    core::MatricesFactors::B(0),
+                    core::MatricesFactors::K(0));
+        mop->setV(backV);
+
 
         mop.projectResponse(b);
     }

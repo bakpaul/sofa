@@ -44,7 +44,6 @@ class SOFA_SIMULATION_CORE_API VelocityBasedIntegrationScheme :
 public:
     SOFA_ABSTRACT_CLASS(VelocityBasedIntegrationScheme, sofa::core::behavior::IntegrationScheme);
 
-protected:
     VelocityBasedIntegrationScheme() = default;
 
     virtual void doSetupIntegrationStep(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult);
@@ -77,6 +76,10 @@ protected:
      * not necessary to share the result with the Newton-Raphson method.
      */
     virtual void updateVelocityAndPositionFromLinearSolution(SReal alpha, unsigned iteration = 0);
+
+
+protected:
+    virtual sofa::Size getIntegrationSchemeOrder() = 0;
 
     virtual SReal getPositionUpdateDerivedFromVelocity() const = 0;
     virtual SReal getInverseVelocityUpdateDerivedFromVelocity() const = 0;

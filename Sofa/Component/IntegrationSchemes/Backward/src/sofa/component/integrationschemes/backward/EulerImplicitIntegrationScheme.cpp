@@ -65,7 +65,7 @@ void EulerImplicitIntegrationScheme::computeAccelerationFromVelocity(sofa::simul
 {
     sofa::core::behavior::MultiVecDeriv res(&vop, result );
     res.eq(velocity, 1/m_dt);
-    res.peq(m_v0, -1/m_dt);
+    res.peq(m_v0[0], -1/m_dt);
 }
 
 
