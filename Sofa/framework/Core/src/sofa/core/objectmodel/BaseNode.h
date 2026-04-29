@@ -152,6 +152,7 @@ protected:
 public:
 
      BASENODE_ADD_SPECIAL_COMPONENT( core::behavior::BaseAnimationLoop, AnimationLoop, animationManager )
+     BASENODE_ADD_SPECIAL_COMPONENT( core::behavior::BaseTimeIntegrator, TimeIntegrator, timeIntegrator )
      BASENODE_ADD_SPECIAL_COMPONENT( core::visual::VisualLoop, VisualLoop, visualLoop )
      BASENODE_ADD_SPECIAL_COMPONENT( core::BehaviorModel, BehaviorModel, behaviorModel )
      BASENODE_ADD_SPECIAL_COMPONENT( core::BaseMapping, Mapping, mapping )

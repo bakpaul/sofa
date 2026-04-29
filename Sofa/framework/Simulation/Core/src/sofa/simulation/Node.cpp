@@ -22,6 +22,7 @@
 #include <sofa/simulation/Node.h>
 
 #include <sofa/core/behavior/BaseAnimationLoop.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
 #include <sofa/core/behavior/BaseConstraintSet.h>
 #include <sofa/core/behavior/BaseInteractionForceField.h>
 #include <sofa/core/behavior/BaseProjectiveConstraintSet.h>
@@ -102,6 +103,7 @@ Node::Node(const std::string& nodename, Node* parent)
     , unsorted(initLink("unsorted", "The remaining objects attached to this node"))
 
     , animationManager(initLink("animationLoop","The AnimationLoop attached to this node (only valid for root node)"))
+    , timeIntegrator(initLink("timeIntegrator","The TimeIntegrator attached to this node (only valid for root node)"))
     , visualLoop(initLink("visualLoop", "The VisualLoop attached to this node (only valid for root node)"))
     , visualStyle(initLink("visualStyle", "The VisualStyle(s) attached to this node"))
     , topology(initLink("topology", "The Topology attached to this node"))
@@ -1878,6 +1880,7 @@ void Node::getLocalObjects( const sofa::core::objectmodel::ClassInfo& class_info
     void Node::remove##FUNCTIONNAME( CLASSNAME* obj ) { SEQUENCENAME.remove(obj); }
 
 NODE_DEFINE_SEQUENCE_ACCESSOR( sofa::core::behavior::BaseAnimationLoop, AnimationLoop, animationManager )
+NODE_DEFINE_SEQUENCE_ACCESSOR( sofa::core::behavior::BaseTimeIntegrator, TimeIntegrator, timeIntegrator )
 NODE_DEFINE_SEQUENCE_ACCESSOR( sofa::core::visual::VisualLoop, VisualLoop, visualLoop )
 NODE_DEFINE_SEQUENCE_ACCESSOR( sofa::core::BehaviorModel, BehaviorModel, behaviorModel )
 NODE_DEFINE_SEQUENCE_ACCESSOR( sofa::core::BaseMapping, Mapping, mapping )
@@ -1925,6 +1928,7 @@ template class NodeSequence<sofa::core::CollisionModel>;
 template class NodeSequence<sofa::core::objectmodel::BaseComponent>;
 
 template class NodeSingle<sofa::core::behavior::BaseAnimationLoop>;
+template class NodeSingle<sofa::core::behavior::BaseTimeIntegrator>;
 template class NodeSingle<sofa::core::visual::VisualLoop>;
 template class NodeSingle<sofa::core::visual::BaseVisualStyle>;
 template class NodeSingle<sofa::core::topology::Topology>;

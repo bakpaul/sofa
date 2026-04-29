@@ -248,6 +248,7 @@ public:
     NodeSequence<sofa::core::objectmodel::BaseComponent> unsorted;
 
     NodeSingle<sofa::core::behavior::BaseAnimationLoop> animationManager;
+    NodeSingle<sofa::core::behavior::BaseTimeIntegrator> timeIntegrator;
     NodeSingle<sofa::core::visual::VisualLoop> visualLoop;
     NodeSingle<sofa::core::visual::BaseVisualStyle> visualStyle;
     NodeSingle<sofa::core::topology::Topology> topology;
@@ -607,6 +608,7 @@ protected:
     /// a Mass is in the FF Sequence
     /// a MeshTopology is in the topology Sequence
     NODE_DECLARE_SEQUENCE_ACCESSOR( sofa::core::behavior::BaseAnimationLoop, AnimationLoop, animationManager )
+    NODE_DECLARE_SEQUENCE_ACCESSOR( sofa::core::behavior::BaseTimeIntegrator, TimeIntegrator, timeIntegrator )
     NODE_DECLARE_SEQUENCE_ACCESSOR( sofa::core::visual::VisualLoop, VisualLoop, visualLoop )
     NODE_DECLARE_SEQUENCE_ACCESSOR( sofa::core::BehaviorModel, BehaviorModel, behaviorModel )
     NODE_DECLARE_SEQUENCE_ACCESSOR( sofa::core::BaseMapping, Mapping, mapping )

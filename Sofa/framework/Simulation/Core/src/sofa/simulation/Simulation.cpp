@@ -41,6 +41,7 @@
 #include <sofa/simulation/DefaultAnimationLoop.h>
 #include <sofa/simulation/DefaultVisualManagerLoop.h>
 #include <sofa/simulation/Node.h>
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
 #include <sofa/helper/system/SetDirectory.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/helper/init.h>
@@ -215,13 +216,17 @@ void animate(Node* root, SReal dt)
     }
     const sofa::core::ExecParams* params = sofa::core::execparams::defaultInstance();
 
-    if (sofa::core::behavior::BaseAnimationLoop* aloop = root->getAnimationLoop())
+    if (auto* timeIntegrator = root->timeIntegrator.get())
+    {
+        timeIntegrator->integrate(params, dt);
+    }
+    else if (sofa::core::behavior::BaseAnimationLoop* aloop = root->getAnimationLoop())
     {
         aloop->step(params, dt);
     }
     else
     {
-        msg_error("Simulation") << "Simulation::animate: AnimationLoop expected at the root node";
+        msg_error("Simulation") << "Simulation::animate: AnimationLoop or TimeIntegrator expected at the root node";
         return;
     }
 }

@@ -19,82 +19,61 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/simulation/init.h>
-
-#include <sofa/core/init.h>
-#include <sofa/helper/init.h>
-
-#include <sofa/simulation/task/MainTaskSchedulerRegistry.h>
-
-#include <sofa/core/ObjectFactory.h>
+#include <sofa/simulation/ComputeRHSVisitor.h>
+#include <sofa/core/behavior/BaseInteractionForceField.h>
+#include <sofa/core/behavior/IntegrationScheme.h>
+#include <sofa/core/MechanicalParams.h>
+#include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/simulation/Node.h>
 
 namespace sofa::simulation
 {
 
-extern void registerRequiredPlugin(sofa::core::ObjectFactory* factory);
-extern void registerDefaultVisualManagerLoop(sofa::core::ObjectFactory* factory);
-extern void registerDefaultAnimationLoop(sofa::core::ObjectFactory* factory);
-extern void registerTaskSchedulerSettings(sofa::core::ObjectFactory* factory);
-extern void registerLinearTimeIntegrator(sofa::core::ObjectFactory* factory);
+ComputeRHSVisitor::ComputeRHSVisitor(const sofa::core::ExecParams* params,
+                     bool parallelSolve,
+                     SReal dt,
+                     unsigned iteration)
+    : IntegrationSchemeBaseVisitor(params, parallelSolve)
+    , m_dt(dt)
+    , m_iteration(iteration)
+{}
 
-namespace core
+void ComputeRHSVisitor::processSolver(simulation::Node* node, sofa::core::behavior::IntegrationScheme* s)
 {
+    helper::ScopedAdvancedTimer timer("Mechanical", node);
+    s->computeRHS(m_iteration);
+}
 
-static bool s_initialized = false;
-static bool s_cleanedUp = false;
-
-
-SOFA_SIMULATION_CORE_API void init()
+void ComputeRHSVisitor::fwdInteractionForceField(Node* node, core::behavior::BaseInteractionForceField* forceField)
 {
-    if (!s_initialized)
+    SOFA_UNUSED(node);
+
+    const core::MultiVecDerivId ffId = core::vec_id::write_access::externalForce;
+    core::MechanicalParams mparams;
+    mparams.setDt(m_dt);
+    forceField->addForce(&mparams, ffId);
+}
+
+Visitor::Result ComputeRHSVisitor::processNodeTopDown(simulation::Node* node)
+{
+    if (!node->integrationScheme.empty())
     {
-        sofa::core::init();
-        s_initialized = true;
-
-        auto* factory = sofa::core::ObjectFactory::getInstance();
-        registerRequiredPlugin(factory);
-        registerDefaultVisualManagerLoop(factory);
-        registerDefaultAnimationLoop(factory);
-        registerTaskSchedulerSettings(factory);
-        registerLinearTimeIntegrator(factory);
+        if (m_parallelSolve)
+        {
+            parallelSolve(node);
+        }
+        else
+        {
+            sequentialSolve(node);
+        }
+        return RESULT_PRUNE;
     }
-}
 
-SOFA_SIMULATION_CORE_API bool isInitialized()
-{
-    return s_initialized;
-}
-
-SOFA_SIMULATION_CORE_API void cleanup()
-{
-    if (!s_cleanedUp)
+    if (m_computeForceIsolatedInteractionForceFields)
     {
-        sofa::simulation::MainTaskSchedulerRegistry::clear();
-        sofa::core::cleanup();
-        s_cleanedUp = true;
+        for_each(this, node, node->interactionForceField, &ComputeRHSVisitor::fwdInteractionForceField);
     }
+    return RESULT_CONTINUE;
 }
-
-SOFA_SIMULATION_CORE_API bool isCleanedUp()
-{
-    return s_cleanedUp;
-}
-
-// Detect missing cleanup() call.
-static const struct CleanupCheck
-{
-    CleanupCheck() {}
-    ~CleanupCheck()
-    {
-        if (simulation::core::isInitialized() && !simulation::core::isCleanedUp())
-            helper::printLibraryNotCleanedUpWarning("SofaSimulationCore", "sofa::simulation::core::cleanup()");
-    }
-} check;
-
-} // namespace core
 
 } // namespace sofa::simulation
-
-
-
-

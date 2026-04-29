@@ -101,6 +101,7 @@ class BaseForceField;
 class BaseMass;
 class BaseMechanicalState;
 class BaseAnimationLoop;
+class BaseTimeIntegrator;
 class BaseLagrangianConstraint;
 class BaseConstraintSet;
 class ConstraintSolver;
@@ -273,6 +274,7 @@ SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::objectmodel::ContextOb
 SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::objectmodel::ConfigurationSetting);
 
 SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::behavior::BaseAnimationLoop);
+SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::behavior::BaseTimeIntegrator);
 SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::behavior::BaseMass);
 SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::behavior::IntegrationScheme);
 SOFA_DECLARE_OPAQUE_FUNCTION_BETWEEN_BASE_AND(sofa::core::behavior::IntegrationScheme);
