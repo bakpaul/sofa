@@ -122,7 +122,7 @@ Visitor::Result AnimateVisitor::processNodeTopDown(simulation::Node* node)
     {
         processCollisionPipeline(node, node->collisionPipeline);
     }
-    if (!node->solver.empty() )
+    if (!node->integrationScheme.empty() )
     {
         sofa::helper::AdvancedTimer::StepVar timer("Mechanical",node);
         const SReal nextTime = node->getTime() + dt;
@@ -150,11 +150,11 @@ Visitor::Result AnimateVisitor::processNodeTopDown(simulation::Node* node)
             accumulateMatrixDeriv.execute(node);
         }
 
-        for( unsigned i=0; i<node->solver.size(); i++ )
+        for( unsigned i=0; i<node->integrationScheme.size(); i++ )
         {
-            ctime_t t0 = begin(node, node->solver[i]);
-            node->solver[i]->solve(params, getDt(), sofa::core::vec_id::write_access::position, sofa::core::vec_id::write_access::velocity);
-            end(node, node->solver[i], t0);
+            ctime_t t0 = begin(node, node->integrationScheme[i]);
+            node->integrationScheme[i]->solve(params, getDt(), sofa::core::vec_id::write_access::position, sofa::core::vec_id::write_access::velocity);
+            end(node, node->integrationScheme[i], t0);
         }
 
         MechanicalProjectPositionAndVelocityVisitor(&m_mparams, nextTime,
