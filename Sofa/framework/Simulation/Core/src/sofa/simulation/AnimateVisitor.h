@@ -32,7 +32,7 @@ SOFA_HEADER_DEPRECATED_NOT_REPLACED("v25.12", "v26.06")
 #include <sofa/simulation/Visitor.h>
 #include <sofa/core/behavior/fwd.h>
 
-#include <sofa/core/behavior/OdeSolver.h>
+#include <sofa/core/behavior/IntegrationScheme.h>
 
 namespace sofa::simulation
 {

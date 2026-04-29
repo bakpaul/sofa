@@ -153,7 +153,7 @@ Visitor::Result AnimateVisitor::processNodeTopDown(simulation::Node* node)
         for( unsigned i=0; i<node->solver.size(); i++ )
         {
             ctime_t t0 = begin(node, node->solver[i]);
-            node->solver[i]->solve(params, getDt());
+            node->solver[i]->solve(params, getDt(), sofa::core::vec_id::write_access::position, sofa::core::vec_id::write_access::velocity);
             end(node, node->solver[i], t0);
         }
 
