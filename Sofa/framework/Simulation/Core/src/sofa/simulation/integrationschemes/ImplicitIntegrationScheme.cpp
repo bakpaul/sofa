@@ -60,15 +60,11 @@ void ImplicitIntegrationScheme::setupIntegrationStep(const core::ExecParams* par
 
 void ImplicitIntegrationScheme::integrate(const core::ExecParams* params, SReal dt, sofa::core::MultiVecCoordId xResult, sofa::core::MultiVecDerivId vResult)
 {
-    for (unsigned i = 0; i < 5; ++i )
-    {
-        setupIntegrationStep(params, dt, xResult, vResult);
-        computeRHS(i == 0);
-        computeLHS(i == 0);
-        solveLinearEquation();
-        updateStatesFromLinearSolution(1.0, i == 0);
-    }
-    postSolve();
+    setupIntegrationStep(params, dt, xResult, vResult);
+    computeRHS(true);
+    computeLHS(true);
+    solveLinearEquation();
+    updateStatesFromLinearSolution(1.0, true);
 }
 
 }
