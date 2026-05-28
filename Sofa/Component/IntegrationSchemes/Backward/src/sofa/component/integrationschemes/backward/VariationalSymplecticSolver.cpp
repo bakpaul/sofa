@@ -53,10 +53,19 @@ void VariationalSymplecticSolver::doSetupIntegrationStep(const core::ExecParams*
 
     simulation::common::VectorOperations::realloc(*m_vop, m_unknown, "dv", this, true);
     simulation::common::VectorOperations::realloc(*m_vop, m_momentum, "momentum", this, true);
+    simulation::common::VectorOperations::realloc(*m_vop, m_r0, "r0", this, true);
+
     if (this->getTime() < std::numeric_limits<SReal>::epsilon())
     {
         computeMomentum(m_momentum, m_xResult, m_vResult);
     }
+
+    m_x0.resize(1);
+    simulation::common::VectorOperations::realloc(*m_vop, m_x0[0], "x0", this, true);
+    sofa::core::behavior::MultiVecCoord x0(m_vop.get(), m_x0[0]);
+    x0.eq(core::vec_id::write_access::position);
+
+
 }
 
 /**
