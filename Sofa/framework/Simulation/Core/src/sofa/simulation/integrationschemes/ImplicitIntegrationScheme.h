@@ -95,6 +95,9 @@ public:
     /// This method is used to compute the compliance for contact corrections
     virtual SReal getPositionIntegrationFactor() const = 0;
 
+    virtual void postSolve()
+    { }
+
 protected:
 
     virtual sofa::Size getIntegrationSchemeTimeOrder() const = 0;

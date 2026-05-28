@@ -90,6 +90,10 @@ public:
      */
     void updateStatesFromLinearSolution(SReal alpha, bool firstIteration = true) override;
 
+    virtual void postSolve() override;
+
+    void computeMomentum(sofa::core::MultiVecDerivId momentum, sofa::core::MultiVecCoordId position, sofa::core::MultiVecDerivId velocity);
+
     virtual SReal getVelocityIntegrationFactor() const final;
     virtual SReal getPositionIntegrationFactor() const final;
 

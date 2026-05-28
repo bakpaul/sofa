@@ -55,7 +55,7 @@ void VariationalSymplecticSolver::doSetupIntegrationStep(const core::ExecParams*
     simulation::common::VectorOperations::realloc(*m_vop, m_momentum, "momentum", this, true);
     if (this->getTime() < std::numeric_limits<SReal>::epsilon())
     {
-        m_vop->v_clear(m_momentum);
+        computeMomentum(m_momentum, m_xResult, m_vResult);
     }
 }
 
@@ -80,6 +80,8 @@ void VariationalSymplecticSolver::computeLHS(bool firstIteration)
 */
 void VariationalSymplecticSolver::computeRHS(bool firstIteration)
 {
+    SOFA_UNUSED(firstIteration);
+
     sofa::core::behavior::MultiVecDeriv f(m_vop.get(), core::vec_id::write_access::force );
     f.clear();
 
@@ -90,8 +92,28 @@ void VariationalSymplecticSolver::computeRHS(bool firstIteration)
         // compute the net forces at the beginning of the time step
         m_mop->computeForce(f);                                                               //f = Kx + Bv
 
-        m_mop->projectResponse(f);   // b is projected to the constrained space
     }
+    {
+        SCOPED_TIMER("ComputeRHTerm");
+
+        m_vop->v_eq(m_r0, f, 1-d_alpha.getValue());
+        auto backV = m_mop->mparams.v();
+        m_mop->mparams.setV(m_vResult);
+
+        m_mop->addMBKv(m_r0, core::MatricesFactors::M(1.0/m_dt + 1.0/m_dt * d_rayleighMass.getValue()),
+                                core::MatricesFactors::B(0.0),
+                                core::MatricesFactors::K(- 1.0/m_dt * d_rayleighStiffness.getValue()));
+
+
+        m_mop->mparams.setV(backV);
+        m_vop->v_eq(m_r0, m_momentum, -1/m_dt);
+
+        // Set the factor of the left hand side taking into account the rayleigh damping
+        // Apply projective constraints to the full residue
+        m_mop->projectResponse(m_r0);
+
+    }
+
 
 }
 
@@ -127,12 +149,45 @@ void VariationalSymplecticSolver::solveLinearEquation()
  */
 void VariationalSymplecticSolver::updateStatesFromLinearSolution(SReal alpha, bool firstIteration)
 {
-    sofa::core::behavior::MultiVecCoord pos(m_vop.get(), m_xResult);
+    SOFA_UNUSED(firstIteration);
 
-    pos.peq(m_unknown, alpha );
+    sofa::core::behavior::MultiVecCoord pos(m_vop.get(), m_xResult);
+    sofa::core::behavior::MultiVecDeriv vel(m_vop.get(), m_vResult);
+
+    vel.peq(m_unknown, alpha);
+    pos.eq(m_x0[0],vel.id(), m_dt * d_alpha.getValue() );
 }
 
+void VariationalSymplecticSolver::computeMomentum(sofa::core::MultiVecDerivId momentum, sofa::core::MultiVecCoordId position, sofa::core::MultiVecDerivId velocity)
+{
+    auto backX = m_mop->mparams.x();
+    auto backV = m_mop->mparams.v();
+    m_mop->mparams.setV(velocity);
+    m_mop->mparams.setX(position);
 
+    m_vop->v_clear(momentum);
+    m_mop->computeForce(momentum);
+    m_vop->v_teq(momentum, d_alpha.getValue() * m_dt);
+    m_mop->addMBKv(momentum, core::MatricesFactors::M(1.0),
+                                core::MatricesFactors::B(0),
+                                core::MatricesFactors::K(0) );
+
+    m_mop->mparams.setV(backV);
+    m_mop->mparams.setX(backX);
+
+}
+
+void VariationalSymplecticSolver::postSolve()
+{
+    sofa::core::behavior::MultiVecCoord pos(m_vop.get(), m_xResult);
+    sofa::core::behavior::MultiVecDeriv vel(m_vop.get(), m_vResult);
+
+    computeMomentum(m_momentum,m_xResult,m_vResult);
+
+    //Only need to add (1-alpha)*vel because alpha has already been accumulated during the last
+    //call to updateStatesFromLinearSolution
+    pos.peq(vel.id(), 1-d_alpha.getValue());
+}
 
 SReal VariationalSymplecticSolver::getVelocityIntegrationFactor() const
 {
