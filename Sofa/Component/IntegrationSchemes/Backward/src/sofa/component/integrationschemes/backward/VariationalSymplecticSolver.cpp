@@ -55,16 +55,15 @@ void VariationalSymplecticSolver::doSetupIntegrationStep(const core::ExecParams*
     simulation::common::VectorOperations::realloc(*m_vop, m_momentum, "momentum", this, true);
     simulation::common::VectorOperations::realloc(*m_vop, m_r0, "r0", this, true);
 
-    if (this->getTime() < std::numeric_limits<SReal>::epsilon())
-    {
-        computeMomentum(m_momentum, m_xResult, m_vResult);
-    }
-
     m_x0.resize(1);
     simulation::common::VectorOperations::realloc(*m_vop, m_x0[0], "x0", this, true);
     sofa::core::behavior::MultiVecCoord x0(m_vop.get(), m_x0[0]);
     x0.eq(core::vec_id::write_access::position);
 
+    if (this->getTime() < std::numeric_limits<SReal>::epsilon())
+    {
+        computeMomentum(m_momentum, m_xResult, m_vResult);
+    }
 
 }
 
@@ -89,7 +88,6 @@ void VariationalSymplecticSolver::computeLHS(bool firstIteration)
 */
 void VariationalSymplecticSolver::computeRHS(bool firstIteration)
 {
-    SOFA_UNUSED(firstIteration);
 
     sofa::core::behavior::MultiVecDeriv f(m_vop.get(), core::vec_id::write_access::force );
     f.clear();
@@ -132,7 +130,7 @@ void VariationalSymplecticSolver::computeRHS(bool firstIteration)
  */
 SReal VariationalSymplecticSolver::evaluateResidue()
 {
-    core::behavior::MultiVecDeriv r0(m_vop.get(), core::vec_id::write_access::force);
+    core::behavior::MultiVecDeriv r0(m_vop.get(), m_r0);
 
     return r0.dot(r0);
 }
@@ -146,7 +144,7 @@ void VariationalSymplecticSolver::solveLinearEquation()
     SCOPED_TIMER("MBKSolve");
 
     l_linearSolver->getLinearSystem()->setSystemSolution(m_unknown);
-    l_linearSolver->getLinearSystem()->setRHS(core::vec_id::write_access::force);
+    l_linearSolver->getLinearSystem()->setRHS(m_r0);
     l_linearSolver->solveSystem();
     l_linearSolver->getLinearSystem()->dispatchSystemSolution(m_unknown);
 }
