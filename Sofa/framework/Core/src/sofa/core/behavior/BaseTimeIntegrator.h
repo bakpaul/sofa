@@ -21,17 +21,48 @@
 ******************************************************************************/
 #pragma once
 
+#include <sofa/core/objectmodel/BaseComponent.h>
+#include <sofa/core/objectmodel/BaseNode.h>
+
 namespace sofa::core::behavior
 {
-    class BaseTimeIntegrator;
-    class BaseLagrangianConstraint;
-    class BaseConstraintCorrection;
-    class BaseController;
-    class BaseForceField;
-    class BaseInteractionConstraint;
-    class BaseInteractionForceField;
-    class BaseInteractionProjectiveConstraintSet;
-    class BaseMass;
-    class BaseMechanicalState;
-    class MultiMatrixAccessor;
-}
+
+
+class SOFA_CORE_API BaseTimeIntegrator : public virtual objectmodel::BaseComponent
+{
+
+public:
+    SOFA_ABSTRACT_CLASS(BaseTimeIntegrator, objectmodel::BaseComponent);
+    SOFA_BASE_CAST_IMPLEMENTATION(BaseTimeIntegrator)
+
+
+    void init() override;
+
+    virtual void integrate(const core::ExecParams* params, SReal dt) = 0;
+
+    bool insertInNode( objectmodel::BaseNode* node ) override;
+    bool removeInNode( objectmodel::BaseNode* node ) override;
+
+
+    /// Save the initial state for later uses in reset()
+    void storeResetState() override;
+
+    /// Returns starting time of the simulation
+    SReal getResetTime() const;
+
+
+    Data<bool> d_computeBoundingBox; ///< If true, compute the global bounding box of the scene at each time step. Used mostly for rendering.
+
+    // the node where the loop will start processing.
+    SingleLink<BaseTimeIntegrator, core::objectmodel::BaseNode, BaseLink::FLAG_STOREPATH> l_node;
+
+    /// Stores starting time of the simulation
+    SReal m_resetTime;
+
+
+protected:
+    BaseTimeIntegrator();
+    ~BaseTimeIntegrator() override;
+};
+
+} // namespace sofa::core::behavior

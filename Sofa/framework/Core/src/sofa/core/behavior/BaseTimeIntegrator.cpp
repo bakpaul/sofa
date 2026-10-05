@@ -19,19 +19,59 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
+#include <sofa/core/behavior/BaseTimeIntegrator.h>
+#include <sofa/core/objectmodel/BaseNode.h>
 
 namespace sofa::core::behavior
 {
-    class BaseTimeIntegrator;
-    class BaseLagrangianConstraint;
-    class BaseConstraintCorrection;
-    class BaseController;
-    class BaseForceField;
-    class BaseInteractionConstraint;
-    class BaseInteractionForceField;
-    class BaseInteractionProjectiveConstraintSet;
-    class BaseMass;
-    class BaseMechanicalState;
-    class MultiMatrixAccessor;
+
+BaseTimeIntegrator::BaseTimeIntegrator()
+    : l_node(initLink("targetNode","Link to the scene's node that will be processed by the loop"))
+    , d_computeBoundingBox(initData(&d_computeBoundingBox, !SOFA_NO_UPDATE_BBOX, "computeBoundingBox", "If true, compute the global bounding box of the scene at each time step. Used mostly for rendering."))
+    , m_resetTime(0.0)
+{}
+
+BaseTimeIntegrator::~BaseTimeIntegrator()
+{}
+
+void BaseTimeIntegrator::init()
+{
+    Inherit1::init();
+
+    if(!l_node)
+        l_node = dynamic_cast<sofa::core::objectmodel::BaseNode*>(getContext());
 }
+
+
+bool BaseTimeIntegrator::insertInNode( objectmodel::BaseNode* node )
+{
+    node->addTimeIntegrator(this);
+    Inherit1::insertInNode(node);
+    return true;
+}
+
+bool BaseTimeIntegrator::removeInNode( objectmodel::BaseNode* node )
+{
+    node->removeTimeIntegrator(this);
+    Inherit1::removeInNode(node);
+    return true;
+}
+
+
+
+void BaseTimeIntegrator::storeResetState()
+{
+    const objectmodel::BaseContext * c = this->getContext();
+
+    if (c != nullptr)
+        m_resetTime = c->getTime();
+}
+
+SReal BaseTimeIntegrator::getResetTime() const
+{
+    return m_resetTime;
+}
+
+
+} // namespace sofa::core::behavior
+
