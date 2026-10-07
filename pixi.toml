@@ -20,14 +20,19 @@ ninja = ">=1.11"
 pkg-config = "*"
 git = ">=2.47.0"
 libboost-headers = ">=1.76.0"
-zlib = ">=1.2.11"
 eigen = ">=3.4.0"
 tinyxml2 = ">=9.0.0"
 cxxopts = ">=3.1.1"
 
+[target.unix.dependencies]
+zlib = ">=1.2.11"
+
 [feature.extended-dependencies.dependencies]
 gtest = "*"
 tight-inclusion = "*"
+
+[feature.extended-dependencies.target.win.dependencies]
+zlib = ">=1.2.11"
 
 [tasks]
 build = { cmd = "cmake --build $SOFA_BUILD_DIR --target all", depends-on = ["configure"] }
@@ -87,11 +92,14 @@ dependencies = { cuda-version = "*", cuda-compiler = "*", libcublas-dev = "*", l
 [feature.plugin-cuda.target.osx]
 activation = { env = { SOFA_PLUGIN_SOFACUDA_ARGS = "-DPLUGIN_SOFACUDA=OFF -DPLUGIN_BEAMADAPTER_CUDA=OFF -DPLUGIN_SOFADISTANCEGRID_CUDA=OFF -DPLUGIN_SOFASPHFLUID_CUDA=OFF -DPLUGIN_SOFTROBOTS_CUDA=OFF" } }
 
-[feature.plugin-cimg]
+[feature.plugin-cimg.target.unix]
 dependencies = { zstd = "*", libtiff = "*", libjpeg-turbo = "*", libpng = "*" }
 
+# For Glew,
 [feature.presets-defaultGUI]
-dependencies = { glew = "*", glfw = "*", nativefiledialog-extended = "*"}
+dependencies = { nativefiledialog-extended = "*"}
+[feature.presets-defaultGUI.target.unix]
+dependencies = { glew = "*", glfw = "*" }
 [feature.presets-defaultGUI.target.linux]
 dependencies = { libglu = "*", libgl-devel = "*" }
 
