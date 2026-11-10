@@ -196,10 +196,11 @@ void AccelerationBasedImplicitIntegrationScheme::computeRHS(bool firstIteration)
         computeCurrentPositionIntegrationError (*m_vop, m_r1, m_xResult, m_vResult, m_acceleration);
         computeCurrentVelocityIntegrationError (*m_vop, m_r2, m_vResult, m_acceleration);
 
+        m_mop->propagateDx(m_r1);
+        m_mop->propagateDx(m_r2);
+
         if (firstIteration)
         {
-            m_mop->propagateDx(m_r1);
-            m_mop->propagateDx(m_r2);
 
             m_mop->mparams.setV(m_r1);
             m_mop->addMBKv(m_mappingGraph, m_r0, core::MatricesFactors::M(0.0),
@@ -283,9 +284,9 @@ void AccelerationBasedImplicitIntegrationScheme::updateStatesFromLinearSolution(
 
     // TODO this collides with Free motion propagation using a MechanicalVOpVisitor and expecting a EulerImplicit
     //      future implementation of global Newton will reactivate those
-    // m_mop->propagateX(pos);
-    // m_mop->propagateV(vel);
-    // m_mop->propagateDx(acc);
+    m_mop->propagateX(pos);
+    m_mop->propagateV(vel);
+    m_mop->propagateDx(acc);
 }
 
 
